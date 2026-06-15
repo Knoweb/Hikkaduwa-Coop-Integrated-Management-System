@@ -1,0 +1,20 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: auth-service
+          uri: http://localhost:9000
+          predicates:
+            - Path=/auth/**
+          filters:
+            # <--- THIS ACTIVATES THE BOUNCER
+
+eureka:
+  client:
+    register-with-eureka: false
+    fetch-registry: false
