@@ -20,6 +20,7 @@ public class AuthController {
 
     @PostMapping("/token")
     public String getToken(@RequestBody AuthRequest authRequest) {
+        // We use .getUsername() here because your AuthRequest DTO has a 'username' field
         return service.generateToken(authRequest.getUsername(), authRequest.getPassword());
     }
 
@@ -33,5 +34,4 @@ public class AuthController {
     public String testGatewaySecurity() {
         return "The Gateway Bouncer let you in! You are securely inside the system.";
     }
-    
 }

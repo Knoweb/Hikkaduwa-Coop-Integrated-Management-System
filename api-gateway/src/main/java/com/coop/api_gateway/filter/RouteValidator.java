@@ -2,6 +2,7 @@ package com.coop.api_gateway.filter;
 
 import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
+
 import java.util.List;
 import java.util.function.Predicate;
 
@@ -14,8 +15,12 @@ public class RouteValidator {
             "/eureka"
     );
 
-    public Predicate<ServerHttpRequest> isSecured =
-            request -> openApiEndpoints
-                    .stream()
-                    .noneMatch(uri -> request.getURI().getPath().contains(uri));
+    public Predicate<ServerHttpRequest> isSecured = request -> {
+        String path = request.getURI().getPath();
+        // If it IS in the list, return false (not secured). Otherwise, true (secured).
+        boolean isSecured = openApiEndpoints.stream().noneMatch(path::contains);
+        System.out.println("DEBUG: Path " + path + " is secured: " + isSecured);
+        return isSecured;
+    };
 }
+
