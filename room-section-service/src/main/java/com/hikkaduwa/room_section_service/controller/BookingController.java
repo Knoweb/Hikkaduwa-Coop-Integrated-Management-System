@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/rooms")
@@ -36,5 +37,15 @@ public class BookingController {
             @RequestParam LocalDateTime endDate
     ) {
         return bookingService.checkAvailability(startDate, endDate);
+    }
+
+    @PatchMapping("/bookings/{id}/cancel")
+    public GuestBooking cancelBooking(@PathVariable UUID id) {
+        return bookingService.cancelBooking(id);
+    }
+
+    @PatchMapping("/bookings/{id}/checkout")
+    public GuestBooking checkoutBooking(@PathVariable UUID id) {
+        return bookingService.checkoutBooking(id);
     }
 }

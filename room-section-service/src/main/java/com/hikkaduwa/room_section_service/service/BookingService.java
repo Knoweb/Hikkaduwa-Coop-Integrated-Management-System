@@ -146,4 +146,34 @@ public class BookingService {
                 })
                 .toList();
     }
+
+    public GuestBooking cancelBooking(UUID bookingId) {
+        GuestBooking booking = guestBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!booking.getStatus().equals("ACTIVE")) {
+            throw new RuntimeException("Only active bookings can be cancelled");
+        }
+
+        booking.setStatus("CANCELLED");
+
+        return guestBookingRepository.save(booking);
+    }
+
+    public GuestBooking checkoutBooking(UUID bookingId) {
+        GuestBooking booking = guestBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        if (!booking.getStatus().equals("ACTIVE")) {
+            throw new RuntimeException("Only active bookings can be checked out");
+        }
+
+        booking.setStatus("CHECKED_OUT");
+
+        Room room = booking.getRoom();
+        room.setStatus("AVAILABLE");
+        roomRepository.save(room);
+
+        return guestBookingRepository.save(booking);
+    }
 }

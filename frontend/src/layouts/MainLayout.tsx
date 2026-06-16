@@ -10,7 +10,7 @@ import {
 } from "@mui/material";
 import { Outlet, useNavigate } from "react-router-dom";
 
-const drawerWidth = 240;
+const drawerWidth = 200;
 
 function MainLayout() {
   const navigate = useNavigate();
@@ -55,6 +55,18 @@ function MainLayout() {
 
           <ListItemButton onClick={() => navigate("/rooms")}>
             <ListItemText primary="Room Section" />
+          </ListItemButton>
+
+          <ListItemButton onClick={() => navigate("/rooms/bookings")}>
+            <ListItemText primary="Room Bookings" />
+          </ListItemButton>
+
+          <ListItemButton onClick={() => navigate("/rooms/occupancy")}>
+            <ListItemText primary="Occupancy Matrix" />
+          </ListItemButton>
+
+          <ListItemButton onClick={() => navigate("/rooms/remittance")}>
+            <ListItemText primary="Daily Remittance" />
           </ListItemButton>
 
           <ListItemButton onClick={() => navigate("/milk-shop")}>
