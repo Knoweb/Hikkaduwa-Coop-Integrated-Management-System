@@ -14,6 +14,10 @@ public class RouteValidator {
             "/auth/token",
             "/eureka"
     );
+    public static final Predicate<ServerHttpRequest> isApiSecured =
+            request -> List.of("/auth/register", "/auth/token") // Add /auth/register here!
+                    .stream()
+                    .noneMatch(uri -> request.getURI().getPath().contains(uri));
 
     public Predicate<ServerHttpRequest> isSecured = request -> {
         String path = request.getURI().getPath();
