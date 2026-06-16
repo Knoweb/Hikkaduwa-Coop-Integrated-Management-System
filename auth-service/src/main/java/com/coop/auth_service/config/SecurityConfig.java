@@ -16,11 +16,11 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         return http
-                .csrf(AbstractHttpConfigurer::disable)
+                .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        // We unlock these specific paths so users can register and login
-                        .requestMatchers("/auth/register", "/auth/token", "/auth/validate").permitAll()
-                        // Everything else remains locked
+                        // You unlocked register, token, and validate...
+                        .requestMatchers("/auth/register", "/auth/token", "/auth/validate", "/auth/secure-test").permitAll()
+                        // ...but EVERYTHING else is locked!
                         .anyRequest().authenticated()
                 )
                 .build();
