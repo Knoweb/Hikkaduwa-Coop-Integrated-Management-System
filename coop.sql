@@ -77,6 +77,16 @@ CREATE TABLE schema_milk_shop.purchase_invoice ( -- Represents Goods Received No
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- new table to link purchase invoices to their line items
+CREATE TABLE IF NOT EXISTS schema_milk_shop.purchase_invoice_item (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    purchase_invoice_id UUID NOT NULL REFERENCES schema_milk_shop.purchase_invoice(id) ON DELETE CASCADE,
+    item_id UUID NOT NULL REFERENCES schema_milk_shop.item_product(id),
+    quantity INT NOT NULL,
+    unit_price DECIMAL(10, 2) NOT NULL,
+    line_total DECIMAL(12, 2) NOT NULL
+);
+
 CREATE TABLE schema_milk_shop.daily_sales (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     sales_date DATE UNIQUE NOT NULL,
