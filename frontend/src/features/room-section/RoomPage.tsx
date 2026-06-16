@@ -6,7 +6,11 @@ import {
   Button,
   Card,
   CardContent,
-  Grid,
+  Chip,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   MenuItem,
   Paper,
   Snackbar,
@@ -30,12 +34,22 @@ type Room = {
 
 function RoomPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
+
   const [roomNumber, setRoomNumber] = useState("");
   const [roomType, setRoomType] = useState("AC");
   const [basePrice, setBasePrice] = useState("");
   const [status, setStatus] = useState("AVAILABLE");
-  const [loading, setLoading] = useState(false);
 
+  const [roomStatusValues, setRoomStatusValues] = useState<Record<string, string>>({});
+
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingRoomId, setEditingRoomId] = useState("");
+  const [editRoomNumber, setEditRoomNumber] = useState("");
+  const [editRoomType, setEditRoomType] = useState("AC");
+  const [editBasePrice, setEditBasePrice] = useState("");
+  const [editStatus, setEditStatus] = useState("AVAILABLE");
+
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
@@ -49,8 +63,19 @@ function RoomPage() {
         throw new Error("Failed to load rooms");
       }
 
-      const data = await response.json();
-      setRooms(data);
+      const data: Room[] = await response.json();
+
+      const sortedRooms = data.sort((a, b) => {
+        return Number(a.roomNumber) - Number(b.roomNumber);
+      });
+
+      setRooms(sortedRooms);
+
+      const statusMap: Record<string, string> = {};
+      data.forEach((room) => {
+        statusMap[room.id] = room.status;
+      });
+      setRoomStatusValues(statusMap);
     } catch (err) {
       console.error(err);
       setError("Failed to load rooms. Check room-section-service on port 8084.");
@@ -102,84 +127,189 @@ function RoomPage() {
     }
   };
 
+  const handleStatusChange = (roomId: string, newStatus: string) => {
+    setRoomStatusValues((previous) => ({
+      ...previous,
+      [roomId]: newStatus,
+    }));
+  };
+
+  const handleUpdateStatus = async (roomId: string) => {
+    const selectedStatus = roomStatusValues[roomId];
+
+    if (!selectedStatus) {
+      setError("Please select a status.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URLS.roomSection}/${roomId}/status`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          status: selectedStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Status update failed");
+      }
+
+      await loadRooms();
+      setMessage("Room status updated successfully.");
+    } catch (err) {
+      console.error(err);
+      setError("Room status update failed.");
+    }
+  };
+
+  const openEditDialog = (room: Room) => {
+    setEditingRoomId(room.id);
+    setEditRoomNumber(room.roomNumber);
+    setEditRoomType(room.roomType);
+    setEditBasePrice(String(room.basePrice));
+    setEditStatus(room.status);
+    setEditDialogOpen(true);
+  };
+
+  const closeEditDialog = () => {
+    setEditDialogOpen(false);
+    setEditingRoomId("");
+    setEditRoomNumber("");
+    setEditRoomType("AC");
+    setEditBasePrice("");
+    setEditStatus("AVAILABLE");
+  };
+
+  const handleUpdateRoom = async () => {
+    if (!editingRoomId || !editRoomNumber || !editBasePrice) {
+      setError("Please fill all room details.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URLS.roomSection}/${editingRoomId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          roomNumber: editRoomNumber,
+          roomType: editRoomType,
+          basePrice: Number(editBasePrice),
+          status: editStatus,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Room update failed");
+      }
+
+      closeEditDialog();
+      await loadRooms();
+      setMessage("Room details updated successfully.");
+    } catch (err) {
+      console.error(err);
+      setError("Room update failed. Maybe room number already exists.");
+    }
+  };
+
+  const getStatusColor = (roomStatus: string) => {
+    if (roomStatus === "AVAILABLE") {
+      return "success";
+    }
+
+    if (roomStatus === "OCCUPIED") {
+      return "error";
+    }
+
+    if (roomStatus === "MAINTENANCE") {
+      return "default";
+    }
+
+    return "primary";
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
-        Room Section
+        Room Management
       </Typography>
 
-      <Typography color="text.secondary" gutterBottom>
-        Manage A/C and Non-A/C rooms.
+      <Typography color="text.secondary">
+        Add rooms and update room details.
       </Typography>
 
       <Card sx={{ mt: 3 }}>
         <CardContent>
-          <Typography variant="h6" gutterBottom>
+          <Typography variant="h5" gutterBottom>
             Add New Room
           </Typography>
 
           <Box component="form" onSubmit={handleCreateRoom}>
-            <Grid container spacing={2}>
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  label="Room Number"
-                  fullWidth
-                  value={roomNumber}
-                  onChange={(e) => setRoomNumber(e.target.value)}
-                  placeholder="Example: 101"
-                />
-              </Grid>
+            <Box
+              sx={{
+                display: "grid",
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "1fr 1fr 1fr 1fr auto",
+                },
+                gap: 2,
+                alignItems: "center",
+              }}
+            >
+              <TextField
+                label="Room Number"
+                fullWidth
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                placeholder="Example: 01"
+              />
 
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  select
-                  label="Room Type"
-                  fullWidth
-                  value={roomType}
-                  onChange={(e) => setRoomType(e.target.value)}
-                >
-                  <MenuItem value="AC">AC</MenuItem>
-                  <MenuItem value="NON_AC">NON AC</MenuItem>
-                </TextField>
-              </Grid>
+              <TextField
+                select
+                label="Room Type"
+                fullWidth
+                value={roomType}
+                onChange={(e) => setRoomType(e.target.value)}
+              >
+                <MenuItem value="AC">AC</MenuItem>
+                <MenuItem value="NON_AC">NON AC</MenuItem>
+              </TextField>
 
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  label="Base Price"
-                  type="number"
-                  fullWidth
-                  value={basePrice}
-                  onChange={(e) => setBasePrice(e.target.value)}
-                  placeholder="Example: 8000"
-                />
-              </Grid>
+              <TextField
+                label="Base Price"
+                type="number"
+                fullWidth
+                value={basePrice}
+                onChange={(e) => setBasePrice(e.target.value)}
+                placeholder="Example: 8000"
+              />
 
-              <Grid size={{ xs: 12, md: 3 }}>
-                <TextField
-                  select
-                  label="Status"
-                  fullWidth
-                  value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                >
-                  <MenuItem value="AVAILABLE">AVAILABLE</MenuItem>
-                  <MenuItem value="OCCUPIED">OCCUPIED</MenuItem>
-                  <MenuItem value="MAINTENANCE">MAINTENANCE</MenuItem>
-                </TextField>
-              </Grid>
+              <TextField
+                select
+                label="Status"
+                fullWidth
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+              >
+                <MenuItem value="AVAILABLE">AVAILABLE</MenuItem>
+                <MenuItem value="OCCUPIED">OCCUPIED</MenuItem>
+                <MenuItem value="MAINTENANCE">MAINTENANCE</MenuItem>
+              </TextField>
 
-              <Grid size={{ xs: 12 }}>
-                <Button type="submit" variant="contained">
-                  Add Room
-                </Button>
-              </Grid>
-            </Grid>
+              <Button type="submit" variant="contained">
+                Add Room
+              </Button>
+            </Box>
           </Box>
         </CardContent>
       </Card>
 
       <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h5" gutterBottom>
           Room List
         </Typography>
 
@@ -192,7 +322,8 @@ function RoomPage() {
                 <TableCell>Room No</TableCell>
                 <TableCell>Type</TableCell>
                 <TableCell>Base Price</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>Current Status</TableCell>
+                <TableCell>Edit</TableCell>
               </TableRow>
             </TableHead>
 
@@ -202,19 +333,89 @@ function RoomPage() {
                   <TableCell>{room.roomNumber}</TableCell>
                   <TableCell>{room.roomType}</TableCell>
                   <TableCell>Rs. {room.basePrice}</TableCell>
-                  <TableCell>{room.status}</TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={room.status}
+                      color={getStatusColor(room.status)}
+                      size="small"
+                    />
+                  </TableCell>
+
+                  <TableCell>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => openEditDialog(room)}
+                    >
+                      Edit
+                    </Button>
+                  </TableCell>
                 </TableRow>
               ))}
 
               {rooms.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={4}>No rooms found</TableCell>
+                  <TableCell colSpan={5}>No rooms found</TableCell>
                 </TableRow>
               )}
             </TableBody>
           </Table>
         )}
       </Paper>
+
+      <Dialog open={editDialogOpen} onClose={closeEditDialog} fullWidth maxWidth="sm">
+        <DialogTitle>Edit Room Details</DialogTitle>
+
+        <DialogContent>
+          <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
+            <TextField
+              label="Room Number"
+              fullWidth
+              value={editRoomNumber}
+              onChange={(e) => setEditRoomNumber(e.target.value)}
+            />
+
+            <TextField
+              select
+              label="Room Type"
+              fullWidth
+              value={editRoomType}
+              onChange={(e) => setEditRoomType(e.target.value)}
+            >
+              <MenuItem value="AC">AC</MenuItem>
+              <MenuItem value="NON_AC">NON AC</MenuItem>
+            </TextField>
+
+            <TextField
+              label="Base Price"
+              type="number"
+              fullWidth
+              value={editBasePrice}
+              onChange={(e) => setEditBasePrice(e.target.value)}
+            />
+
+            <TextField
+              select
+              label="Status"
+              fullWidth
+              value={editStatus}
+              onChange={(e) => setEditStatus(e.target.value)}
+            >
+              <MenuItem value="AVAILABLE">AVAILABLE</MenuItem>
+              <MenuItem value="OCCUPIED">OCCUPIED</MenuItem>
+              <MenuItem value="MAINTENANCE">MAINTENANCE</MenuItem>
+            </TextField>
+          </Box>
+        </DialogContent>
+
+        <DialogActions>
+          <Button onClick={closeEditDialog}>Cancel</Button>
+          <Button variant="contained" onClick={handleUpdateRoom}>
+            Save Changes
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       <Snackbar open={!!message} autoHideDuration={3000} onClose={() => setMessage("")}>
         <Alert severity="success" onClose={() => setMessage("")}>
