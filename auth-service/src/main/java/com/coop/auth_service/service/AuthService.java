@@ -1,30 +1,39 @@
 package com.coop.auth_service.service;
 
 import com.coop.auth_service.entity.User;
-import com.coop.auth_service.repository.UserRepository; // <-- Import the repository
+import com.coop.auth_service.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 @Service
 public class AuthService {
 
     @Autowired
-    private UserRepository repository; // <-- INJECT THE REPOSITORY HERE
+    private UserRepository repository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @Autowired
     private JwtService jwtService;
 
     public String saveUser(User user) {
-        // Now that the repository is injected, you can also fix your save method!
+        user.setPassword(passwordEncoder.encode(user.getPassword()));
         repository.save(user);
         return "User added to the system";
     }
 
     public String generateToken(String username, String password) {
-        User user = repository.findByEmail(username)
+        User user = repository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return jwtService.generateToken(username, user.getRole());
+        if (passwordEncoder.matches(password, user.getPassword())) {
+            // PASS THE ROLE HERE TO MATCH YOUR JWTSERVICE DEFINITION
+            return jwtService.generateToken(username, user.getRole());
+        } else {
+            throw new RuntimeException("Invalid password");
+        }
     }
 
     public void validateToken(String token) {

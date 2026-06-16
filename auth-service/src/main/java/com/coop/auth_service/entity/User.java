@@ -5,13 +5,16 @@ import lombok.*;
 
 @Entity
 @Table(name = "users")
-@Data
+@Data // <-- This perfectly handles your Getters and Setters!
 @NoArgsConstructor
 @AllArgsConstructor
 public class User {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    private String name;
 
     @Column(nullable = false, unique = true)
     private String username;

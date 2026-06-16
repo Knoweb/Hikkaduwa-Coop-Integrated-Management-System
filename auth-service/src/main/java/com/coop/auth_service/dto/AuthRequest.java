@@ -8,6 +8,10 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 @NoArgsConstructor
 public class AuthRequest {
-    private String username;
+    private String username; // Must be named 'username'
     private String password;
+
+    // Ensure you have these getters!
+    public String getUsername() { return username; }
+    public String getPassword() { return password; }
 }
