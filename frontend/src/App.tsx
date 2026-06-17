@@ -9,12 +9,17 @@ import BeerGardenLayout from "./layouts/BeerGardenLayout";
 // --- Pages ---
 import Login from "./features/auth/Login";
 import AdminDashboard from "./features/admin/AdminDashboard";
+
 import RoomDashboardPage from "./features/room-section/RoomDashboardPage";
 import RoomPage from "./features/room-section/RoomPage";
 import BookingPage from "./features/room-section/BookingPage";
 import OccupancyMatrixPage from "./features/room-section/OccupancyMatrixPage";
 import RemittancePage from "./features/room-section/RemittancePage";
+
 import MilkShopDashboard from "./features/milk-shop/MilkShopDashboard";
+import SupplierPage from "./features/milk-shop/SupplierPage";
+import ItemPage from "./features/milk-shop/ItemPage";
+
 import BeerGardenDashboard from "./features/beer-garden/BeerGardenDashboard";
 
 const ProtectedRoute = () => {
@@ -70,9 +75,11 @@ function App() {
           <Route path="/milk-shop" element={<MilkShopLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<MilkShopDashboard />} />
-            <Route path="sales" element={<MilkShopDashboard />} />
-            <Route path="inventory" element={<MilkShopDashboard />} />
-            <Route path="suppliers" element={<MilkShopDashboard />} />
+            <Route path="suppliers" element={<SupplierPage />} />
+            <Route path="items" element={<ItemPage />} />
+            <Route path="stock" element={<MilkShopDashboard />} />
+            <Route path="grn" element={<MilkShopDashboard />} />
+            <Route path="daily-sales" element={<MilkShopDashboard />} />
           </Route>
 
           {/* 4. BEER GARDEN DOMAIN */}

@@ -51,6 +51,7 @@ CREATE TABLE schema_milk_shop.supplier (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     name VARCHAR(100) NOT NULL,
     contact_number VARCHAR(20),
+    address VARCHAR(255),
     is_active BOOLEAN DEFAULT TRUE
 );
 
@@ -59,7 +60,8 @@ CREATE TABLE schema_milk_shop.item_product (
     name VARCHAR(100) NOT NULL,
     category VARCHAR(50) NOT NULL,
     reorder_level INT NOT NULL DEFAULT 10,
-    unit_price DECIMAL(10, 2) NOT NULL
+    unit_price DECIMAL(10, 2) NOT NULL,
+    is_active BOOLEAN DEFAULT TRUE
 );
 
 CREATE TABLE schema_milk_shop.stock_ledger (

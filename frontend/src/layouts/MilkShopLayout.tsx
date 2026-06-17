@@ -1,4 +1,11 @@
-import { Box, Divider, Drawer, List, ListItemButton, Typography } from "@mui/material";
+import {
+  Box,
+  Divider,
+  Drawer,
+  List,
+  ListItemButton,
+  Typography,
+} from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
 const drawerWidth = 240;
@@ -7,18 +14,45 @@ function MilkShopLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // MILK SHOP MENUS
   const menuItems = [
-    { label: "Operations Dashboard", path: "/milk-shop/dashboard" },
-    { label: "Daily Sales", path: "/milk-shop/sales" },
-    { label: "Stock Ledger", path: "/milk-shop/inventory" },
-    { label: "Suppliers & GRN", path: "/milk-shop/suppliers" },
+    {
+      label: "Dashboard",
+      path: "/milk-shop/dashboard",
+    },
+    {
+      label: "Suppliers",
+      path: "/milk-shop/suppliers",
+    },
+    {
+      label: "Items / Products",
+      path: "/milk-shop/items",
+    },
+    {
+      label: "Stock Ledger",
+      path: "/milk-shop/stock",
+    },
+    {
+      label: "GRN",
+      path: "/milk-shop/grn",
+    },
+    {
+      label: "Daily Sales",
+      path: "/milk-shop/daily-sales",
+    },
   ];
 
-  const isActive = (path: string) => location.pathname.startsWith(path);
+  const isActive = (path: string) => {
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#f0fdf4" }}>
+    <Box
+      sx={{
+        display: "flex",
+        minHeight: "100vh",
+        backgroundColor: "#fff7ed",
+      }}
+    >
       <Drawer
         variant="permanent"
         sx={{
@@ -27,17 +61,24 @@ function MilkShopLayout() {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            backgroundColor: "#064e3b", // Forest Green Branding
+            backgroundColor: "#7f1d1d",
             color: "white",
             borderRight: "none",
           },
         }}
       >
         <Box sx={{ px: 2, py: 3 }}>
-          <Typography variant="h6" sx={{ fontWeight: "bold" }}>Coop System</Typography>
-          <Typography variant="body2" sx={{ color: "#a7f3d0", mt: 0.5 }}>Milk Shop Division</Typography>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            Coop System
+          </Typography>
+
+          <Typography variant="body2" sx={{ color: "#fed7aa", mt: 0.5 }}>
+            Milk Shop Section
+          </Typography>
         </Box>
-        <Divider sx={{ borderColor: "#047857" }} />
+
+        <Divider sx={{ borderColor: "#b91c1c" }} />
+
         <List sx={{ px: 1, mt: 1 }}>
           {menuItems.map((item) => (
             <ListItemButton
@@ -45,20 +86,49 @@ function MilkShopLayout() {
               selected={isActive(item.path)}
               onClick={() => navigate(item.path)}
               sx={{
-                borderRadius: 2, mb: 0.5, color: "white",
-                "&.Mui-selected": { backgroundColor: "#10b981", color: "white" },
-                "&.Mui-selected:hover": { backgroundColor: "#059669" },
-                "&:hover": { backgroundColor: "#065f46" },
+                borderRadius: 2,
+                mb: 0.5,
+                color: "white",
+                "&.Mui-selected": {
+                  backgroundColor: "#f97316",
+                  color: "white",
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: "#ea580c",
+                },
+                "&:hover": {
+                  backgroundColor: "#991b1b",
+                },
               }}
             >
-              <Typography sx={{ fontSize: 15, fontWeight: isActive(item.path) ? "bold" : "normal" }}>
+              <Typography
+                sx={{
+                  fontSize: 15,
+                  fontWeight: isActive(item.path) ? "bold" : "normal",
+                }}
+              >
                 {item.label}
               </Typography>
             </ListItemButton>
           ))}
         </List>
+
+        <Box sx={{ mt: "auto", p: 2 }}>
+          <Divider sx={{ borderColor: "#b91c1c", mb: 2 }} />
+
+          <Typography variant="caption" sx={{ color: "#fed7aa" }}>
+            Milk Shop Panel
+          </Typography>
+        </Box>
       </Drawer>
-      <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
+
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 3,
+        }}
+      >
         <Outlet />
       </Box>
     </Box>

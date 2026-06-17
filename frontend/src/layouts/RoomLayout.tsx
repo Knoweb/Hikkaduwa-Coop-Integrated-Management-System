@@ -21,7 +21,7 @@ function MainLayout() {
     },
     {
       label: "Room Management",
-      path: "/rooms",
+      path: "/rooms/management",
     },
     {
       label: "Room Bookings",
@@ -111,7 +111,7 @@ function MainLayout() {
           <Divider sx={{ borderColor: "#b91c1c", mb: 2 }} />
 
           <Typography variant="caption" sx={{ color: "#fed7aa" }}>
-            Room Section Admin Panel
+            Room Section Panel
           </Typography>
         </Box>
       </Drawer>

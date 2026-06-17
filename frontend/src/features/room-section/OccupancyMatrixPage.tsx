@@ -36,6 +36,21 @@ type DayCell = {
   isCurrentMonth: boolean;
 };
 
+// --- ADDED FORMATTING HELPER HERE ---
+const formatCustomDateTime = (dateString: string) => {
+  if (!dateString) return "-";
+  const date = new Date(dateString);
+  
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).replace(",", ""); // Removes the default comma between date and time
+};
+
 function OccupancyMatrixPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
@@ -271,10 +286,10 @@ function OccupancyMatrixPage() {
           <Typography variant="h5">{monthLabel}</Typography>
 
           <Box sx={{ display: "flex", gap: 1 }}>
-            <Chip label="Available" color="success" size="small" />
-            <Chip label="Booked" color="primary" size="small" />
-            <Chip label="Occupied" color="error" size="small" />
-            <Chip label="Maintenance" color="default" size="small" />
+            <Chip label="A - Available" color="success" size="small" />
+            <Chip label="B - Booked" color="primary" size="small" />
+            <Chip label="O - Occupied" color="error" size="small" />
+            <Chip label="M - Maintenance" color="default" size="small" />
           </Box>
         </Box>
       </Paper>
@@ -482,12 +497,13 @@ function OccupancyMatrixPage() {
                   </Box>
 
                   <Box>
+                    {/* APPLIED THE HELPER FUNCTION HERE */}
                     <Typography color="text.secondary">
-                      Check In: {booking.checkIn}
+                      Check In: {formatCustomDateTime(booking.checkIn)}
                     </Typography>
 
                     <Typography color="text.secondary">
-                      Check Out: {booking.checkOut}
+                      Check Out: {formatCustomDateTime(booking.checkOut)}
                     </Typography>
                   </Box>
                 </Box>

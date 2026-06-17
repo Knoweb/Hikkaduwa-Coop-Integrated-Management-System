@@ -30,4 +30,7 @@ public class ItemProduct {
 
     @Column(name = "unit_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal unitPrice;
+
+    @Column(name = "is_active")
+    private Boolean isActive = true;
 }
