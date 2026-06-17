@@ -5,6 +5,7 @@ import RoomPage from "./features/room-section/RoomPage";
 import BookingPage from "./features/room-section/BookingPage";
 import OccupancyMatrixPage from "./features/room-section/OccupancyMatrixPage";
 import RemittancePage from "./features/room-section/RemittancePage";
+import RoomDashboardPage from "./features/room-section/RoomDashboardPage";
 import MilkShopDashboard from "./features/milk-shop/MilkShopDashboard";
 
 function App() {
@@ -13,6 +14,7 @@ function App() {
       <Routes>
         <Route path="/" element={<MainLayout />}>
           <Route index element={<DashboardPage />} />
+          <Route path="rooms/dashboard" element={<RoomDashboardPage />} />
           <Route path="rooms" element={<RoomPage />} />
           <Route path="rooms/bookings" element={<BookingPage />} />
           <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />

@@ -26,12 +26,9 @@ public class RemittanceService {
                     throw new RuntimeException("Remittance already recorded for this date");
                 });
 
-        LocalDateTime startOfDay = request.getRemittanceDate().atStartOfDay();
-        LocalDateTime nextDay = request.getRemittanceDate().plusDays(1).atStartOfDay();
-
-        BigDecimal expectedInvoiceTotal = guestBookingRepository.sumInvoiceTotalForDateRange(
-                startOfDay,
-                nextDay
+        BigDecimal expectedInvoiceTotal = calculateExpectedInvoiceTotal(
+                request.getRemittanceDate().atStartOfDay(),
+                request.getRemittanceDate().plusDays(1).atStartOfDay()
         );
 
         BigDecimal discrepancy = request.getTotalCollected().subtract(expectedInvoiceTotal);
@@ -45,21 +42,63 @@ public class RemittanceService {
 
         DailyRemittance saved = dailyRemittanceRepository.save(remittance);
 
-        String message = discrepancy.compareTo(BigDecimal.ZERO) == 0
-                ? "Remittance saved successfully. No discrepancy."
-                : "Remittance saved successfully. Discrepancy detected.";
-
-        return RemittanceResponse.builder()
-                .remittanceId(saved.getId())
-                .remittanceDate(saved.getRemittanceDate())
-                .totalCollected(saved.getTotalCollected())
-                .expectedInvoiceTotal(expectedInvoiceTotal)
-                .discrepancy(discrepancy)
-                .message(message)
-                .build();
+        return buildRemittanceResponse(saved, expectedInvoiceTotal, discrepancy);
     }
 
-    public List<DailyRemittance> getAllRemittances() {
-        return dailyRemittanceRepository.findAll();
+    public List<RemittanceResponse> getAllRemittances() {
+        return dailyRemittanceRepository.findAll()
+                .stream()
+                .map(remittance -> {
+                    LocalDateTime startOfDay = remittance.getRemittanceDate().atStartOfDay();
+                    LocalDateTime nextDay = remittance.getRemittanceDate().plusDays(1).atStartOfDay();
+
+                    BigDecimal expectedInvoiceTotal = calculateExpectedInvoiceTotal(
+                            startOfDay,
+                            nextDay
+                    );
+
+                    BigDecimal discrepancy = remittance.getTotalCollected()
+                            .subtract(expectedInvoiceTotal);
+
+                    return buildRemittanceResponse(
+                            remittance,
+                            expectedInvoiceTotal,
+                            discrepancy
+                    );
+                })
+                .toList();
+    }
+
+    private BigDecimal calculateExpectedInvoiceTotal(
+            LocalDateTime startOfDay,
+            LocalDateTime nextDay
+    ) {
+        BigDecimal total = guestBookingRepository.sumInvoiceTotalForDateRange(
+                startOfDay,
+                nextDay
+        );
+
+        return total == null ? BigDecimal.ZERO : total;
+    }
+
+    private RemittanceResponse buildRemittanceResponse(
+            DailyRemittance remittance,
+            BigDecimal expectedInvoiceTotal,
+            BigDecimal discrepancy
+    ) {
+        String message = discrepancy.compareTo(BigDecimal.ZERO) == 0
+                ? "No discrepancy."
+                : "Discrepancy detected.";
+
+        return RemittanceResponse.builder()
+                .id(remittance.getId())
+                .remittanceId(remittance.getId())
+                .remittanceDate(remittance.getRemittanceDate())
+                .totalCollected(remittance.getTotalCollected())
+                .expectedInvoiceTotal(expectedInvoiceTotal)
+                .discrepancy(discrepancy)
+                .receptionistId(remittance.getReceptionistId())
+                .message(message)
+                .build();
     }
 }

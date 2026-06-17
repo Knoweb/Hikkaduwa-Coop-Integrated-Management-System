@@ -6,6 +6,7 @@ import {
   Button,
   Card,
   CardContent,
+  Chip,
   Paper,
   Snackbar,
   Table,
@@ -18,17 +19,36 @@ import {
 } from "@mui/material";
 import { API_BASE_URLS } from "../../api/apiConfig";
 
+type ChipColor =
+  | "default"
+  | "primary"
+  | "secondary"
+  | "error"
+  | "info"
+  | "success"
+  | "warning";
+
+type MoneyValue = number | string | undefined;
+
 type Remittance = {
   id: string;
+  remittanceId?: string;
   remittanceDate: string;
-  totalCollected: number;
+  totalCollected: MoneyValue;
+  expectedInvoiceTotal: MoneyValue;
+  discrepancy: MoneyValue;
   receptionistId: string;
-  createdAt?: string;
-  invoiceTotal?: number;
-  difference?: number;
+  message: string;
 };
 
 const TEMP_RECEPTIONIST_ID = "00000000-0000-0000-0000-000000000001";
+
+const formatMoney = (value: MoneyValue) => {
+  return Number(value || 0).toLocaleString("en-LK", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
+};
 
 function RemittancePage() {
   const [remittances, setRemittances] = useState<Remittance[]>([]);
@@ -46,8 +66,16 @@ function RemittancePage() {
         throw new Error("Failed to load remittances");
       }
 
-      const data = await response.json();
-      setRemittances(data);
+      const data: Remittance[] = await response.json();
+
+      const sortedData = data.sort((a, b) => {
+        return (
+          new Date(b.remittanceDate).getTime() -
+          new Date(a.remittanceDate).getTime()
+        );
+      });
+
+      setRemittances(sortedData);
     } catch (err) {
       console.error(err);
       setError("Failed to load remittances. Check room-section-service.");
@@ -85,16 +113,46 @@ function RemittancePage() {
         throw new Error("Remittance create failed");
       }
 
+      const savedData: Remittance = await response.json();
+
       setRemittanceDate("");
       setTotalCollected("");
 
       await loadRemittances();
 
-      setMessage("Daily remittance recorded successfully.");
+      setMessage(savedData.message || "Daily remittance recorded successfully.");
     } catch (err) {
       console.error(err);
       setError("Remittance create failed. Maybe this date is already recorded.");
     }
+  };
+
+  const getDiscrepancyColor = (discrepancy: MoneyValue): ChipColor => {
+    const value = Number(discrepancy || 0);
+
+    if (value === 0) {
+      return "success";
+    }
+
+    if (value < 0) {
+      return "error";
+    }
+
+    return "warning";
+  };
+
+  const getDiscrepancyLabel = (discrepancy: MoneyValue) => {
+    const value = Number(discrepancy || 0);
+
+    if (value === 0) {
+      return "Balanced";
+    }
+
+    if (value < 0) {
+      return "Short";
+    }
+
+    return "Extra";
   };
 
   return (
@@ -104,13 +162,26 @@ function RemittancePage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Record daily room section collections and view remittance history.
+        Record daily room collections and compare actual collection with system
+        invoice total.
       </Typography>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
+      <Card
+        sx={{
+          mt: 3,
+          maxWidth: 750,
+          mx: "auto",
+          borderRadius: 3,
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h5" gutterBottom>
             Add Daily Remittance
+          </Typography>
+
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Select the date and enter the actual amount collected by the room
+            section.
           </Typography>
 
           <Box component="form" onSubmit={handleCreateRemittance}>
@@ -119,10 +190,9 @@ function RemittancePage() {
                 display: "grid",
                 gridTemplateColumns: {
                   xs: "1fr",
-                  md: "1fr 1fr auto",
+                  md: "1fr 1fr",
                 },
                 gap: 2,
-                alignItems: "center",
               }}
             >
               <TextField
@@ -147,63 +217,108 @@ function RemittancePage() {
                 placeholder="Example: 25000"
               />
 
-              <Button type="submit" variant="contained">
-                Save
-              </Button>
+              <Box
+                sx={{
+                  gridColumn: {
+                    xs: "span 1",
+                    md: "span 2",
+                  },
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Button type="submit" variant="contained" size="large">
+                  Save Remittance
+                </Button>
+              </Box>
             </Box>
           </Box>
         </CardContent>
       </Card>
 
       <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h6" gutterBottom>
+        <Typography variant="h5" gutterBottom>
           Remittance History
         </Typography>
 
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Date</TableCell>
-              <TableCell>Total Collected</TableCell>
-              <TableCell>Invoice Total</TableCell>
-              <TableCell>Difference</TableCell>
-              <TableCell>Receptionist ID</TableCell>
-            </TableRow>
-          </TableHead>
-
-          <TableBody>
-            {remittances.map((item) => (
-              <TableRow key={item.id}>
-                <TableCell>{item.remittanceDate}</TableCell>
-                <TableCell>Rs. {item.totalCollected}</TableCell>
-                <TableCell>
-                  {item.invoiceTotal !== undefined
-                    ? `Rs. ${item.invoiceTotal}`
-                    : "-"}
-                </TableCell>
-                <TableCell>
-                  {item.difference !== undefined ? `Rs. ${item.difference}` : "-"}
-                </TableCell>
-                <TableCell>{item.receptionistId}</TableCell>
-              </TableRow>
-            ))}
-
-            {remittances.length === 0 && (
+        <Box sx={{ overflowX: "auto" }}>
+          <Table>
+            <TableHead>
               <TableRow>
-                <TableCell colSpan={5}>No remittance records found</TableCell>
+                <TableCell>Date</TableCell>
+                <TableCell>Expected Invoice Total</TableCell>
+                <TableCell>Total Collected</TableCell>
+                <TableCell>Difference</TableCell>
+                <TableCell>Status</TableCell>
+                <TableCell>Message</TableCell>
+                <TableCell>Receptionist ID</TableCell>
               </TableRow>
-            )}
-          </TableBody>
-        </Table>
+            </TableHead>
+
+            <TableBody>
+              {remittances.map((item) => (
+                <TableRow key={item.id || item.remittanceId}>
+                  <TableCell>{item.remittanceDate}</TableCell>
+
+                  <TableCell>
+                    Rs. {formatMoney(item.expectedInvoiceTotal)}
+                  </TableCell>
+
+                  <TableCell>Rs. {formatMoney(item.totalCollected)}</TableCell>
+
+                  <TableCell
+                    sx={{
+                      fontWeight: "bold",
+                      color:
+                        Number(item.discrepancy || 0) < 0
+                          ? "error.main"
+                          : Number(item.discrepancy || 0) > 0
+                          ? "warning.main"
+                          : "success.main",
+                    }}
+                  >
+                    Rs. {formatMoney(item.discrepancy)}
+                  </TableCell>
+
+                  <TableCell>
+                    <Chip
+                      label={getDiscrepancyLabel(item.discrepancy)}
+                      color={getDiscrepancyColor(item.discrepancy)}
+                      size="small"
+                    />
+                  </TableCell>
+
+                  <TableCell>{item.message}</TableCell>
+
+                  <TableCell>{item.receptionistId}</TableCell>
+                </TableRow>
+              ))}
+
+              {remittances.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={7}>No remittance records found</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </Box>
       </Paper>
 
-      <Snackbar open={!!message} autoHideDuration={3000} onClose={() => setMessage("")}>
+      <Snackbar
+        open={!!message}
+        autoHideDuration={3000}
+        onClose={() => setMessage("")}
+      >
         <Alert severity="success" onClose={() => setMessage("")}>
           {message}
         </Alert>
       </Snackbar>
 
-      <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError("")}>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={4000}
+        onClose={() => setError("")}
+      >
         <Alert severity="error" onClose={() => setError("")}>
           {error}
         </Alert>

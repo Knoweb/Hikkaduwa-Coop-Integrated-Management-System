@@ -53,6 +53,10 @@ function MainLayout() {
             <ListItemText primary="Dashboard" />
           </ListItemButton>
 
+          <ListItemButton onClick={() => navigate("/rooms/dashboard")}>
+            <ListItemText primary="Room Dashboard" />
+          </ListItemButton>
+
           <ListItemButton onClick={() => navigate("/rooms")}>
             <ListItemText primary="Room Section" />
           </ListItemButton>
