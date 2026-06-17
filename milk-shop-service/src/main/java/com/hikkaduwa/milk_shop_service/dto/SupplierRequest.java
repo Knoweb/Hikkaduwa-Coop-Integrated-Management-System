@@ -1,0 +1,15 @@
+package com.hikkaduwa.milk_shop_service.dto;
+
+import jakarta.validation.constraints.NotBlank;
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public class SupplierRequest {
+
+    @NotBlank(message = "Supplier name is required")
+    private String name;
+
+    private String contactNumber;
+}
