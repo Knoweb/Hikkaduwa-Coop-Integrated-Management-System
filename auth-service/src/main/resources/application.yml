@@ -2,6 +2,8 @@ server:
   port: 9000
 
 spring:
+  application:
+    name: auth-service
   datasource:
     url: jdbc:postgresql://localhost:5433/coop_db?currentSchema=schema_admin
     username: postgres
@@ -19,8 +21,7 @@ eureka:
   instance:
     prefer-ip-address: true
   client:
-    fetch-registry: false
-    register-with-eureka: false
+    fetch-registry: true
+    register-with-eureka: true
     service-url:
       defaultZone: http://localhost:8761/eureka/
-

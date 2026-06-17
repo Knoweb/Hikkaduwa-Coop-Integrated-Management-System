@@ -18,15 +18,28 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainLayout />}>
-          <Route path="rooms/dashboard" element={<RoomDashboardPage />} />
-          <Route path="rooms" element={<RoomPage />} />
-          <Route path="rooms/bookings" element={<BookingPage />} />
-          <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />
-          <Route path="rooms/remittance" element={<RemittancePage />} />
+        {/* 1. Public Route: Anyone can access the Login page */}
+        <Route path="/login" element={<Login />} />
+
+        {/* 2. Protected Routes: Only accessible if logged in (has JWT token) */}
+        <Route element={<ProtectedRoute />}>
+          
+          {/* Room Section (Uses the MainLayout sidebar) */}
+          <Route path="/" element={<MainLayout />}>
+            <Route index element={<Navigate to="/rooms/dashboard" replace />} />
+            <Route path="rooms/dashboard" element={<RoomDashboardPage />} />
+            <Route path="rooms" element={<RoomPage />} />
+            <Route path="rooms/bookings" element={<BookingPage />} />
+            <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />
+            <Route path="rooms/remittance" element={<RemittancePage />} />
+          </Route>
+
+          {/* Beer Garden Section */}
+          <Route path="/beer-garden/dashboard" element={<BeerGardenDashboard />} />
+          
         </Route>
 
-        {/* Catch-all route to redirect unknown paths to home/login */}
+        {/* Catch-all route to redirect unknown paths back to home */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </BrowserRouter>

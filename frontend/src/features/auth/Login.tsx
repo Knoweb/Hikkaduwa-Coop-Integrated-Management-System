@@ -69,7 +69,8 @@ const Login: React.FC = () => {
         },
         heroSection: {
             flex: 1,
-            backgroundImage: `linear-gradient(to bottom right, rgba(0, 31, 84, 0.85), rgba(0, 102, 204, 0.75)), url(${heroImage})`,
+            // Engineered Gradient: Deep Brand Red fading into Vibrant Brand Orange
+            backgroundImage: `linear-gradient(to bottom right, rgba(168, 25, 25, 0.87), rgba(215, 77, 3, 0.81)), url(${heroImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
             display: 'flex',
@@ -83,14 +84,16 @@ const Login: React.FC = () => {
             fontSize: '48px',
             fontWeight: '700',
             marginBottom: '20px',
-            lineHeight: '1.2'
+            lineHeight: '1.2',
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)' // Added subtle shadow to ensure text remains readable over the bright colors
         },
         heroSubtitle: {
             fontSize: '18px',
-            fontWeight: '300',
-            opacity: 0.9,
+            fontWeight: '400',
+            opacity: 0.95,
             maxWidth: '500px',
-            lineHeight: '1.6'
+            lineHeight: '1.6',
+            textShadow: '0 1px 2px rgba(0,0,0,0.1)'
         },
         formSection: {
             flex: 1,
@@ -174,7 +177,7 @@ const Login: React.FC = () => {
         button: {
             width: '100%',
             padding: '14px',
-            backgroundColor: '#0ea5e9',
+            backgroundColor: '#FF5A00', 
             color: 'white',
             border: 'none',
             borderRadius: '8px',
@@ -182,7 +185,7 @@ const Login: React.FC = () => {
             fontWeight: '600',
             cursor: isLoading ? 'wait' : 'pointer',
             marginTop: '10px',
-            boxShadow: '0 4px 12px rgba(14, 165, 233, 0.3)',
+            boxShadow: '0 4px 12px rgba(255, 90, 0, 0.3)', 
             transition: 'background-color 0.2s ease, transform 0.1s ease',
             opacity: isLoading ? 0.7 : 1
         },
@@ -273,8 +276,8 @@ const Login: React.FC = () => {
                             type="submit" 
                             disabled={isLoading} 
                             style={styles.button}
-                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#0284c7'}
-                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#0ea5e9'}
+                            onMouseOver={(e) => e.currentTarget.style.backgroundColor = '#D9381E'}
+                            onMouseOut={(e) => e.currentTarget.style.backgroundColor = '#FF5A00'}
                             onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.98)'}
                             onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                         >
