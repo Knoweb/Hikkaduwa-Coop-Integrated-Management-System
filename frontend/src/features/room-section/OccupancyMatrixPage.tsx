@@ -242,7 +242,14 @@ function OccupancyMatrixPage() {
             Previous
           </Button>
 
-          <Button variant="contained" size="small" onClick={goToToday}>
+          <Button variant="contained" size="small" onClick={goToToday}
+          sx={{
+                backgroundColor: "#f97316",
+                color: "white",
+                "&:hover": {
+                backgroundColor: "#ea580c", 
+                },
+              }}>
             Today
           </Button>
 

@@ -1,36 +1,52 @@
 import {
-  AppBar,
   Box,
+  Divider,
   Drawer,
   List,
   ListItemButton,
-  ListItemText,
-  Toolbar,
   Typography,
 } from "@mui/material";
-import { Outlet, useNavigate } from "react-router-dom";
+import { Outlet, useLocation, useNavigate } from "react-router-dom";
 
-const drawerWidth = 200;
+const drawerWidth = 240;
 
 function MainLayout() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const menuItems = [
+    {
+      label: "Dashboard",
+      path: "/rooms/dashboard",
+    },
+    {
+      label: "Room Management",
+      path: "/rooms",
+    },
+    {
+      label: "Room Bookings",
+      path: "/rooms/bookings",
+    },
+    {
+      label: "Occupancy Calendar",
+      path: "/rooms/occupancy",
+    },
+    {
+      label: "Daily Remittance",
+      path: "/rooms/remittance",
+    },
+  ];
+
+  const isActive = (path: string) => {
+    if (path === "/rooms") {
+      return location.pathname === "/rooms";
+    }
+
+    return location.pathname.startsWith(path);
+  };
 
   return (
-    <Box sx={{ display: "flex" }}>
-      <AppBar
-        position="fixed"
-        sx={{
-          width: `calc(100% - ${drawerWidth}px)`,
-          ml: `${drawerWidth}px`,
-        }}
-      >
-        <Toolbar>
-          <Typography variant="h6" noWrap>
-            Hikkaduwa Co-op Integrated Management System
-          </Typography>
-        </Toolbar>
-      </AppBar>
-
+    <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#fff7ed" }}>
       <Drawer
         variant="permanent"
         sx={{
@@ -39,44 +55,65 @@ function MainLayout() {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            backgroundColor: "#1f2937",
+            backgroundColor: "#7f1d1d",
             color: "white",
+            borderRight: "none",
           },
         }}
       >
-        <Toolbar>
-          <Typography variant="h6">Co-op System</Typography>
-        </Toolbar>
+        <Box sx={{ px: 2, py: 3 }}>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            Co-op System
+          </Typography>
 
-        <List>
-          <ListItemButton onClick={() => navigate("/")}>
-            <ListItemText primary="Dashboard" />
-          </ListItemButton>
+          <Typography variant="body2" sx={{ color: "#fed7aa", mt: 0.5 }}>
+            Room Section
+          </Typography>
+        </Box>
 
-          <ListItemButton onClick={() => navigate("/rooms/dashboard")}>
-            <ListItemText primary="Room Dashboard" />
-          </ListItemButton>
+        <Divider sx={{ borderColor: "#b91c1c" }} />
 
-          <ListItemButton onClick={() => navigate("/rooms")}>
-            <ListItemText primary="Room Section" />
-          </ListItemButton>
-
-          <ListItemButton onClick={() => navigate("/rooms/bookings")}>
-            <ListItemText primary="Room Bookings" />
-          </ListItemButton>
-
-          <ListItemButton onClick={() => navigate("/rooms/occupancy")}>
-            <ListItemText primary="Occupancy Matrix" />
-          </ListItemButton>
-
-          <ListItemButton onClick={() => navigate("/rooms/remittance")}>
-            <ListItemText primary="Daily Remittance" />
-          </ListItemButton>
-
-          <ListItemButton onClick={() => navigate("/milk-shop")}>
-            <ListItemText primary="Milk Shop" />
-          </ListItemButton>
+        <List sx={{ px: 1, mt: 1 }}>
+          {menuItems.map((item) => (
+            <ListItemButton
+              key={item.path}
+              selected={isActive(item.path)}
+              onClick={() => navigate(item.path)}
+              sx={{
+                borderRadius: 2,
+                mb: 0.5,
+                color: "white",
+                "&.Mui-selected": {
+                  backgroundColor: "#f97316",
+                  color: "white",
+                },
+                "&.Mui-selected:hover": {
+                  backgroundColor: "#ea580c",
+                },
+                "&:hover": {
+                  backgroundColor: "#991b1b",
+                },
+              }}
+            >
+              <Typography
+                sx={{
+                  fontSize: 15,
+                  fontWeight: isActive(item.path) ? "bold" : "normal",
+                }}
+              >
+                {item.label}
+              </Typography>
+            </ListItemButton>
+          ))}
         </List>
+
+        <Box sx={{ mt: "auto", p: 2 }}>
+          <Divider sx={{ borderColor: "#b91c1c", mb: 2 }} />
+
+          <Typography variant="caption" sx={{ color: "#fed7aa" }}>
+            Room Section Admin Panel
+          </Typography>
+        </Box>
       </Drawer>
 
       <Box
@@ -84,9 +121,6 @@ function MainLayout() {
         sx={{
           flexGrow: 1,
           p: 3,
-          mt: 8,
-          minHeight: "100vh",
-          backgroundColor: "#f4f6f8",
         }}
       >
         <Outlet />

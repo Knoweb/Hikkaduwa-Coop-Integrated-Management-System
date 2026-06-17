@@ -300,7 +300,14 @@ function RoomPage() {
                 <MenuItem value="MAINTENANCE">MAINTENANCE</MenuItem>
               </TextField>
 
-              <Button type="submit" variant="contained">
+              <Button type="submit" variant="contained"
+              sx={{
+                    backgroundColor: "#f97316",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#ea580c", 
+                    },
+                  }}>
                 Add Room
               </Button>
             </Box>
@@ -347,6 +354,14 @@ function RoomPage() {
                       variant="contained"
                       size="small"
                       onClick={() => openEditDialog(room)}
+                      sx={{
+                              fontWeight: 'bold',
+                              backgroundColor: "#f97316",
+                              color: "white",
+                              "&:hover": {
+                                backgroundColor: "#ea580c",
+                              },
+                            }}
                     >
                       Edit
                     </Button>
@@ -411,7 +426,14 @@ function RoomPage() {
 
         <DialogActions>
           <Button onClick={closeEditDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleUpdateRoom}>
+          <Button variant="contained" onClick={handleUpdateRoom}
+          sx={{
+                backgroundColor: "#f97316",
+                color: "white",
+                "&:hover": {
+                backgroundColor: "#ea580c", 
+                },
+              }}>
             Save Changes
           </Button>
         </DialogActions>
