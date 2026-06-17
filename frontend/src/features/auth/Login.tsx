@@ -27,22 +27,25 @@ const Login: React.FC = () => {
         try {
             await loginUser(username, password);
             
-            // Explicit routing matrix for all active microservices
+            // --- NEW: Save the user's role to local storage for the App.tsx RootBoundary ---
+            localStorage.setItem('user_role', section);
+            
+            // --- UPDATED: Explicit routing matrix pointing to the new Domain Layouts ---
             switch (section) {
                 case 'milk-shop':
-                    navigate('/milk-shop');
+                    navigate('/milk-shop/dashboard');
                     break;
                 case 'beer-garden':
-                    navigate('/beer-garden');
+                    navigate('/beer-garden/dashboard');
                     break;
                 case 'room-section':
-                    navigate('/rooms');
+                    navigate('/rooms/dashboard');
                     break;
                 case 'dashboard':
-                    navigate('/');
+                    navigate('/admin/dashboard');
                     break;
                 default:
-                    navigate('/');
+                    navigate('/admin/dashboard');
             }
             
         } catch (err: any) {
@@ -69,7 +72,6 @@ const Login: React.FC = () => {
         },
         heroSection: {
             flex: 1,
-            // Engineered Gradient: Deep Brand Red fading into Vibrant Brand Orange
             backgroundImage: `linear-gradient(to bottom right, rgba(168, 25, 25, 0.87), rgba(215, 77, 3, 0.81)), url(${heroImage})`,
             backgroundSize: 'cover',
             backgroundPosition: 'center',
@@ -85,7 +87,7 @@ const Login: React.FC = () => {
             fontWeight: '700',
             marginBottom: '20px',
             lineHeight: '1.2',
-            textShadow: '0 2px 4px rgba(0,0,0,0.2)' // Added subtle shadow to ensure text remains readable over the bright colors
+            textShadow: '0 2px 4px rgba(0,0,0,0.2)'
         },
         heroSubtitle: {
             fontSize: '18px',

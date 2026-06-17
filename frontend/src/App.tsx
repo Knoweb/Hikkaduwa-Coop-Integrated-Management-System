@@ -1,46 +1,95 @@
 import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
-import MainLayout from "./layouts/MainLayout";
+
+// --- Layouts ---
+import AdminLayout from "./layouts/AdminLayout";
+import RoomLayout from "./layouts/RoomLayout";
+import MilkShopLayout from "./layouts/MilkShopLayout";
+import BeerGardenLayout from "./layouts/BeerGardenLayout";
+
+// --- Pages ---
+import Login from "./features/auth/Login";
+import AdminDashboard from "./features/admin/AdminDashboard";
+import RoomDashboardPage from "./features/room-section/RoomDashboardPage";
 import RoomPage from "./features/room-section/RoomPage";
 import BookingPage from "./features/room-section/BookingPage";
 import OccupancyMatrixPage from "./features/room-section/OccupancyMatrixPage";
 import RemittancePage from "./features/room-section/RemittancePage";
-import RoomDashboardPage from "./features/room-section/RoomDashboardPage";
+import MilkShopDashboard from "./features/milk-shop/MilkShopDashboard";
 import BeerGardenDashboard from "./features/beer-garden/BeerGardenDashboard";
-import Login from "./features/auth/Login";
 
-// The Guard: If no token exists, the user is redirected to /login
 const ProtectedRoute = () => {
   const token = localStorage.getItem('jwt_token');
   return token ? <Outlet /> : <Navigate to="/login" replace />;
+};
+
+// --- NEW: Smart Traffic Controller ---
+const RootBoundary = () => {
+  const token = localStorage.getItem('jwt_token');
+  
+  // 1. If no token, kick them to login page immediately
+  if (!token) return <Navigate to="/login" replace />;
+
+  // 2. If token exists, check their role and send them to their specific dashboard
+  const role = localStorage.getItem('user_role');
+  switch (role) {
+    case 'milk-shop': return <Navigate to="/milk-shop/dashboard" replace />;
+    case 'beer-garden': return <Navigate to="/beer-garden/dashboard" replace />;
+    case 'room-section': return <Navigate to="/rooms/dashboard" replace />;
+    case 'dashboard': return <Navigate to="/admin/dashboard" replace />;
+    default: return <Navigate to="/login" replace />;
+  }
 };
 
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* 1. Public Route: Anyone can access the Login page */}
         <Route path="/login" element={<Login />} />
 
-        {/* 2. Protected Routes: Only accessible if logged in (has JWT token) */}
         <Route element={<ProtectedRoute />}>
           
-          {/* Room Section (Uses the MainLayout sidebar) */}
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<Navigate to="/rooms/dashboard" replace />} />
-            <Route path="rooms/dashboard" element={<RoomDashboardPage />} />
-            <Route path="rooms" element={<RoomPage />} />
-            <Route path="rooms/bookings" element={<BookingPage />} />
-            <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />
-            <Route path="rooms/remittance" element={<RemittancePage />} />
+          {/* 1. ADMIN DOMAIN */}
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AdminDashboard />} />
+            <Route path="users" element={<AdminDashboard />} /> 
+            <Route path="logs" element={<AdminDashboard />} />
           </Route>
 
-          {/* Beer Garden Section */}
-          <Route path="/beer-garden/dashboard" element={<BeerGardenDashboard />} />
-          
+          {/* 2. ROOM SECTION DOMAIN */}
+          <Route path="/rooms" element={<RoomLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<RoomDashboardPage />} />
+            <Route path="management" element={<RoomPage />} />
+            <Route path="bookings" element={<BookingPage />} />
+            <Route path="occupancy" element={<OccupancyMatrixPage />} />
+            <Route path="remittance" element={<RemittancePage />} />
+          </Route>
+
+          {/* 3. MILK SHOP DOMAIN */}
+          <Route path="/milk-shop" element={<MilkShopLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<MilkShopDashboard />} />
+            <Route path="sales" element={<MilkShopDashboard />} />
+            <Route path="inventory" element={<MilkShopDashboard />} />
+            <Route path="suppliers" element={<MilkShopDashboard />} />
+          </Route>
+
+          {/* 4. BEER GARDEN DOMAIN */}
+          <Route path="/beer-garden" element={<BeerGardenLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<BeerGardenDashboard />} />
+            <Route path="issuance" element={<BeerGardenDashboard />} />
+            <Route path="prices" element={<BeerGardenDashboard />} />
+            <Route path="commissions" element={<BeerGardenDashboard />} />
+          </Route>
+
         </Route>
 
-        {/* Catch-all route to redirect unknown paths back to home */}
-        <Route path="*" element={<Navigate to="/" replace />} />
+        {/* --- NEW: Attach the Traffic Controller to the root and catch-all routes --- */}
+        <Route path="/" element={<RootBoundary />} />
+        <Route path="*" element={<RootBoundary />} />
+
       </Routes>
     </BrowserRouter>
   );

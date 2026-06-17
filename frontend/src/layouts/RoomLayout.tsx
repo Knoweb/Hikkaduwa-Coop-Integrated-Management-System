@@ -63,7 +63,7 @@ function MainLayout() {
       >
         <Box sx={{ px: 2, py: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-            Co-op System
+            Coop System
           </Typography>
 
           <Typography variant="body2" sx={{ color: "#fed7aa", mt: 0.5 }}>

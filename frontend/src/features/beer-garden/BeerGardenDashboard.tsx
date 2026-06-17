@@ -1,52 +1,14 @@
-import { Card, CardContent, Grid, Typography } from "@mui/material";
+import React from 'react';
 
-function MilkShopDashboard() {
-  return (
-    <div>
-      <Typography variant="h4" gutterBottom>
-        Milk Shop
-      </Typography>
+const BeerGardenDashboard: React.FC = () => {
+    return (
+        <div style={{ padding: '24px' }}>
+            <h1 style={{ color: '#0f172a', marginBottom: '16px' }}>Beer Garden Logistics</h1>
+            <div style={{ backgroundColor: 'white', padding: '20px', borderRadius: '8px', boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
+                <p>Welcome to the Beer Garden Dashboard. Liquor issuance, commission tracking, and active price lists will be displayed here.</p>
+            </div>
+        </div>
+    );
+};
 
-      <Typography color="text.secondary" gutterBottom>
-        Manage suppliers, items, stock ledger, GRN, and daily sales.
-      </Typography>
-
-      <Grid container spacing={3} sx={{ mt: 1 }}>
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Suppliers</Typography>
-              <Typography color="text.secondary">
-                Add and view Milk Shop suppliers.
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">Stock Ledger</Typography>
-              <Typography color="text.secondary">
-                View current stock and low-stock alerts.
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        <Grid size={{ xs: 12, md: 4 }}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6">GRN</Typography>
-              <Typography color="text.secondary">
-                Create Goods Received Notes and update stock.
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-    </div>
-  );
-}
-
-export default MilkShopDashboard;
+export default BeerGardenDashboard;

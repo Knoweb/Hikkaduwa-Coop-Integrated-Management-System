@@ -397,7 +397,7 @@ function BookingPage() {
         </head>
         <body>
           <div class="receipt">
-            <h2>Hikkaduwa Co-op Integrated Management System</h2>
+            <h2>Hikkaduwa COOP Integrated Management System</h2>
             <h3>Room Booking Receipt</h3>
 
             <table>
@@ -757,7 +757,7 @@ function BookingPage() {
           {selectedInvoiceBooking && (
             <Box sx={{ mt: 1 }}>
               <Typography variant="h6" gutterBottom>
-                Hikkaduwa Co-op - Room Section
+                Hikkaduwa Coop - Room Section
               </Typography>
 
               <Typography color="text.secondary" gutterBottom>
