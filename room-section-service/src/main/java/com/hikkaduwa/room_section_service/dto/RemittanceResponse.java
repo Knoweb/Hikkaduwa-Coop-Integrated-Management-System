@@ -11,10 +11,12 @@ import java.util.UUID;
 @Builder
 public class RemittanceResponse {
 
+    private UUID id;
     private UUID remittanceId;
     private LocalDate remittanceDate;
     private BigDecimal totalCollected;
     private BigDecimal expectedInvoiceTotal;
     private BigDecimal discrepancy;
+    private UUID receptionistId;
     private String message;
 }

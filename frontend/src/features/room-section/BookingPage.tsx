@@ -83,6 +83,8 @@ const formatMoney = (value: number | undefined) => {
 function BookingPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
+  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [availabilityChecked, setAvailabilityChecked] = useState(false);
 
   const [roomId, setRoomId] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -144,11 +146,79 @@ function BookingPage() {
     loadBookings();
   }, []);
 
+  const resetAvailability = () => {
+    setAvailableRooms([]);
+    setAvailabilityChecked(false);
+    setRoomId("");
+  };
+
+  const isBookingOverlapping = (
+    existingCheckIn: string,
+    existingCheckOut: string,
+    newCheckIn: string,
+    newCheckOut: string
+  ) => {
+    const existingStart = new Date(existingCheckIn);
+    const existingEnd = new Date(existingCheckOut);
+    const newStart = new Date(newCheckIn);
+    const newEnd = new Date(newCheckOut);
+
+    return newStart < existingEnd && newEnd > existingStart;
+  };
+
+  const handleCheckAvailability = () => {
+    if (!checkIn || !checkOut) {
+      setError("Please select check-in and check-out dates first.");
+      return;
+    }
+
+    if (new Date(checkIn) >= new Date(checkOut)) {
+      setError("Check-out date must be after check-in date.");
+      return;
+    }
+
+    const filteredRooms = rooms.filter((room) => {
+      if (room.status === "MAINTENANCE" || room.status === "OCCUPIED") {
+        return false;
+      }
+
+      const hasActiveBooking = bookings.some((booking) => {
+        return (
+          booking.status === "ACTIVE" &&
+          booking.room?.id === room.id &&
+          isBookingOverlapping(
+            booking.checkIn,
+            booking.checkOut,
+            checkIn,
+            checkOut
+          )
+        );
+      });
+
+      return !hasActiveBooking;
+    });
+
+    setAvailableRooms(filteredRooms);
+    setAvailabilityChecked(true);
+    setRoomId("");
+
+    if (filteredRooms.length === 0) {
+      setError("No rooms are available for the selected date range.");
+    } else {
+      setMessage(`${filteredRooms.length} room(s) available.`);
+    }
+  };
+
   const handleCreateBooking = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     if (!roomId || !guestName || !nicPassport || !checkIn || !checkOut) {
       setError("Please fill all required fields.");
+      return;
+    }
+
+    if (!availabilityChecked) {
+      setError("Please check room availability before creating booking.");
       return;
     }
 
@@ -178,6 +248,8 @@ function BookingPage() {
       setCheckIn("");
       setCheckOut("");
       setAdvancePayment("");
+      setAvailableRooms([]);
+      setAvailabilityChecked(false);
 
       await loadRooms();
       await loadBookings();
@@ -387,6 +459,8 @@ function BookingPage() {
     printWindow.print();
   };
 
+  const roomsForDropdown = availabilityChecked ? availableRooms : rooms;
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom>
@@ -394,46 +468,41 @@ function BookingPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Create guest bookings, cancel bookings, check-out guests, and view
-        invoices.
+        Create guest bookings, check room availability, cancel bookings,
+        check-out guests, and view invoices.
       </Typography>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
-          <Typography variant="h5" gutterBottom> {/* Changed from h5 to h6 to make it slightly more compact */}
+      <Card
+        sx={{
+          mt: 3,
+          maxWidth: 850,
+          mx: "auto",
+          borderRadius: 3,
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
+          <Typography variant="h5" gutterBottom>
             Create Booking
           </Typography>
 
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Enter guest details and check room availability before creating a
+            booking.
+          </Typography>
+
           <Box component="form" onSubmit={handleCreateBooking}>
-            {/* --- UPDATED RESPONSIVE GRID --- */}
             <Box
               sx={{
                 display: "grid",
-                gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", md: "repeat(3, 1fr)" },
+                gridTemplateColumns: {
+                  xs: "1fr",
+                  md: "1fr 1fr",
+                },
                 gap: 2,
-                alignItems: "center",
-                mt: 1
               }}
             >
               <TextField
-                select
-                size="small"
-                label="Select Room"
-                fullWidth
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-              >
-                {rooms.map((room) => (
-                  <MenuItem key={room.id} value={room.id}>
-                    Room {room.roomNumber} - {room.roomType} - Rs.{" "}
-                    {room.basePrice} - {room.status}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
                 label="Guest Name"
-                size="small"
                 fullWidth
                 value={guestName}
                 onChange={(e) => setGuestName(e.target.value)}
@@ -442,7 +511,6 @@ function BookingPage() {
 
               <TextField
                 label="NIC / Passport"
-                size="small"
                 fullWidth
                 value={nicPassport}
                 onChange={(e) => setNicPassport(e.target.value)}
@@ -452,10 +520,12 @@ function BookingPage() {
               <TextField
                 label="Check In"
                 type="datetime-local"
-                size="small"
                 fullWidth
                 value={checkIn}
-                onChange={(e) => setCheckIn(e.target.value)}
+                onChange={(e) => {
+                  setCheckIn(e.target.value);
+                  resetAvailability();
+                }}
                 slotProps={{
                   inputLabel: {
                     shrink: true,
@@ -466,10 +536,12 @@ function BookingPage() {
               <TextField
                 label="Check Out"
                 type="datetime-local"
-                size="small"
                 fullWidth
                 value={checkOut}
-                onChange={(e) => setCheckOut(e.target.value)}
+                onChange={(e) => {
+                  setCheckOut(e.target.value);
+                  resetAvailability();
+                }}
                 slotProps={{
                   inputLabel: {
                     shrink: true,
@@ -477,26 +549,70 @@ function BookingPage() {
                 }}
               />
 
+              <Box
+                sx={{
+                  gridColumn: {
+                    xs: "span 1",
+                    md: "span 2",
+                  },
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Button
+                  type="button"
+                  variant="outlined"
+                  onClick={handleCheckAvailability}
+                >
+                  Check Availability
+                </Button>
+              </Box>
+
+              <TextField
+                select
+                label="Select Available Room"
+                fullWidth
+                value={roomId}
+                onChange={(e) => setRoomId(e.target.value)}
+                disabled={!availabilityChecked}
+                helperText={
+                  availabilityChecked
+                    ? `${availableRooms.length} available room(s) found`
+                    : "Select dates and click Check Availability first"
+                }
+              >
+                {roomsForDropdown.map((room) => (
+                  <MenuItem key={room.id} value={room.id}>
+                    Room {room.roomNumber} - {room.roomType} - Rs.{" "}
+                    {room.basePrice} - {room.status}
+                  </MenuItem>
+                ))}
+              </TextField>
+
               <TextField
                 label="Advance Payment"
                 type="number"
-                size="small"
                 fullWidth
                 value={advancePayment}
                 onChange={(e) => setAdvancePayment(e.target.value)}
                 placeholder="Example: 5000"
               />
 
-              <Button 
-                type="submit" 
-                variant="contained" 
-                sx={{ 
-                  height: '40px', // Matches the height of the size="small" TextFields
-                  gridColumn: { xs: 'span 1', sm: 'span 2', md: 'span 3' } // Makes the button span the full width of the bottom row
+              <Box
+                sx={{
+                  gridColumn: {
+                    xs: "span 1",
+                    md: "span 2",
+                  },
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  mt: 1,
                 }}
               >
-                Create Booking
-              </Button>
+                <Button type="submit" variant="contained" size="large">
+                  Create Booking
+                </Button>
+              </Box>
             </Box>
           </Box>
         </CardContent>
@@ -546,7 +662,6 @@ function BookingPage() {
                       <Button
                         variant="outlined"
                         size="small"
-                        sx={{fontWeight: "bold"}}
                         onClick={() => openInvoiceDialog(booking)}
                       >
                         Invoice
@@ -558,7 +673,6 @@ function BookingPage() {
                             variant="outlined"
                             color="error"
                             size="small"
-                            sx={{fontWeight: "bold"}}
                             onClick={() => handleCancelBooking(booking.id)}
                           >
                             Cancel
@@ -567,16 +681,11 @@ function BookingPage() {
                           <Button
                             variant="contained"
                             color="primary"
+                            size="small"
                             onClick={() => handleCheckoutBooking(booking.id)}
-                            sx={{ 
-                                minWidth: "100px", 
-                                padding: "5px 10px", 
-                                fontSize: "12px",   
-                                fontWeight: "bold" 
-                            }}
-                            >
+                          >
                             Check-out
-                            </Button>
+                          </Button>
                         </>
                       )}
                     </Box>

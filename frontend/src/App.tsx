@@ -5,6 +5,7 @@ import RoomPage from "./features/room-section/RoomPage";
 import BookingPage from "./features/room-section/BookingPage";
 import OccupancyMatrixPage from "./features/room-section/OccupancyMatrixPage";
 import RemittancePage from "./features/room-section/RemittancePage";
+import RoomDashboardPage from "./features/room-section/RoomDashboardPage";
 import MilkShopDashboard from "./features/milk-shop/MilkShopDashboard";
 import BeerGardenDashboard from "./features/beer-garden/BeerGardenDashboard";
 import Login from "./features/auth/Login";
@@ -19,26 +20,14 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* PUBLIC ROUTE - Login page is accessible to everyone */}
-        <Route path="/login" element={<Login />} />
-
-        {/* PROTECTED ROUTES - Only accessible if user has a valid JWT */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/" element={<MainLayout />}>
-            <Route index element={<DashboardPage />} />
-            
-            {/* Milk Shop Section */}
-            <Route path="milk-shop" element={<MilkShopDashboard />} />
-            
-            {/* Beer Garden Section */}
-            <Route path="beer-garden" element={<BeerGardenDashboard />} />
-            
-            {/* Room & Booking Section */}
-            <Route path="rooms" element={<RoomPage />} />
-            <Route path="rooms/bookings" element={<BookingPage />} />
-            <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />
-            <Route path="rooms/remittance" element={<RemittancePage />} />
-          </Route>
+        <Route path="/" element={<MainLayout />}>
+          <Route index element={<DashboardPage />} />
+          <Route path="rooms/dashboard" element={<RoomDashboardPage />} />
+          <Route path="rooms" element={<RoomPage />} />
+          <Route path="rooms/bookings" element={<BookingPage />} />
+          <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />
+          <Route path="rooms/remittance" element={<RemittancePage />} />
+          <Route path="milk-shop" element={<MilkShopDashboard />} />
         </Route>
 
         {/* Catch-all route to redirect unknown paths to home/login */}
