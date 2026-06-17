@@ -563,6 +563,14 @@ function BookingPage() {
                   type="button"
                   variant="outlined"
                   onClick={handleCheckAvailability}
+                  sx={{
+                    color: "#7f1d1d",
+                    borderColor: "#7f1d1d",
+                    "&:hover": {
+                      backgroundColor: "#7f1d1d",
+                      color: "white", 
+                    },
+                  }}
                 >
                   Check Availability
                 </Button>
@@ -609,7 +617,14 @@ function BookingPage() {
                   mt: 1,
                 }}
               >
-                <Button type="submit" variant="contained" size="large">
+                <Button type="submit" variant="contained" size="large"
+                sx={{
+                    backgroundColor: "#f97316",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#ea580c", 
+                    },
+                  }}>
                   Create Booking
                 </Button>
               </Box>
@@ -663,6 +678,15 @@ function BookingPage() {
                         variant="outlined"
                         size="small"
                         onClick={() => openInvoiceDialog(booking)}
+                        sx={{
+                          fontWeight: 'bold', // <-- This makes it bold!
+                          color: "#7f1d1d",
+                          borderColor: "#7f1d1d",
+                          "&:hover": {
+                            backgroundColor: "#fef2f2",
+                            borderColor: "#991b1b",
+                          },
+                        }}
                       >
                         Invoice
                       </Button>
@@ -674,6 +698,15 @@ function BookingPage() {
                             color="error"
                             size="small"
                             onClick={() => handleCancelBooking(booking.id)}
+                            sx={{
+                              fontWeight: 'bold',
+                              color: "#f51818",
+                              borderColor: "#7f1d1d",
+                              "&:hover": {
+                                backgroundColor: "#fef2f2",
+                                borderColor: "#991b1b",
+                              },
+                            }}
                           >
                             Cancel
                           </Button>
@@ -683,6 +716,15 @@ function BookingPage() {
                             color="primary"
                             size="small"
                             onClick={() => handleCheckoutBooking(booking.id)}
+                            sx={{
+                              fontWeight: 'bold',
+                              width: "100px",
+                              backgroundColor: "#f97316",
+                              color: "white",
+                              "&:hover": {
+                                backgroundColor: "#ea580c",
+                              },
+                            }}
                           >
                             Check-out
                           </Button>
