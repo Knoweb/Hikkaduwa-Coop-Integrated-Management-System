@@ -11,5 +11,8 @@ public class SupplierRequest {
     @NotBlank(message = "Supplier name is required")
     private String name;
 
+    @NotBlank(message = "Contact number is required")
     private String contactNumber;
+
+    private String address;
 }

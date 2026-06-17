@@ -24,6 +24,9 @@ public class Supplier {
     @Column(name = "contact_number", length = 20)
     private String contactNumber;
 
+    @Column(length = 255)
+    private String address;
+
     @Column(name = "is_active")
     private Boolean isActive = true;
 }

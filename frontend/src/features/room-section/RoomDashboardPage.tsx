@@ -5,6 +5,7 @@ import {
   Card,
   CardContent,
   Chip,
+  CircularProgress,
   Paper,
   Snackbar,
   Table,
@@ -80,28 +81,28 @@ const formatDateTime = (dateString: string) => {
 
   const date = new Date(dateString);
 
-  return date
-    .toLocaleString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    })
-    .replace(",", "");
+  return date.toLocaleString("en-US", {
+    month: "2-digit",
+    day: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: true,
+  }).replace(",", "");
 };
 
 function RoomDashboardPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [remittances, setRemittances] = useState<Remittance[]>([]);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   const todayKey = formatDateKey(new Date());
 
   const loadDashboardData = async () => {
     try {
+      setLoading(true);
       const roomsResponse = await fetch(API_BASE_URLS.roomSection);
 
       if (!roomsResponse.ok) {
@@ -136,6 +137,8 @@ function RoomDashboardPage() {
     } catch (err) {
       console.error(err);
       setError("Failed to load dashboard data. Check room-section-service.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -215,47 +218,55 @@ function RoomDashboardPage() {
       title: "Total Rooms",
       value: totalRooms,
       helper: "All rooms in the system",
+      borderColor: "#f97316", // Brand Orange
     },
     {
       title: "Available Rooms",
       value: availableRooms,
       helper: "Ready for booking",
+      borderColor: "#f97316", // Brand Orange
     },
     {
       title: "Occupied Rooms",
       value: occupiedRooms,
       helper: "Currently occupied",
+      borderColor: "#7f1d1d", // Brand Dark Red
     },
     {
-      title: "Maintenance Rooms",
+      title: "Maintenance",
       value: maintenanceRooms,
-      helper: "Not available for booking",
+      helper: "Not available",
+      borderColor: "#9ca3af", // Neutral Grey
     },
     {
       title: "Active Bookings",
       value: activeBookings,
-      helper: "Current active guest bookings",
+      helper: "Current active guests",
+      borderColor: "#f97316", // Brand Orange
     },
     {
       title: "Today Bookings",
       value: todayBookings.length,
       helper: "Bookings starting today",
+      borderColor: "#f97316", // Brand Orange
     },
     {
-      title: "Checked-out Bookings",
+      title: "Checked-out",
       value: checkedOutBookings,
       helper: "Completed bookings",
+      borderColor: "#7f1d1d", // Brand Dark Red
     },
     {
-      title: "Cancelled Bookings",
+      title: "Cancelled",
       value: cancelledBookings,
       helper: "Cancelled records",
+      borderColor: "#9ca3af", // Neutral Grey
     },
   ];
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold", color: "#111827" }}>
         Room Section Dashboard
       </Typography>
 
@@ -263,146 +274,180 @@ function RoomDashboardPage() {
         Quick overview of rooms, bookings, occupancy, and daily collection.
       </Typography>
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            sm: "1fr 1fr",
-            md: "repeat(4, 1fr)",
-          },
-          gap: 2,
-          mt: 3,
-        }}
-      >
-        {summaryCards.map((card) => (
-          <Card key={card.title} sx={{ borderRadius: 3 }}>
-            <CardContent>
-              <Typography color="text.secondary" gutterBottom>
-                {card.title}
-              </Typography>
+      {loading ? (
+        <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "50vh" }}>
+          <CircularProgress sx={{ color: "#f97316" }} />
+          <Typography sx={{ mt: 2, color: "text.secondary" }}>Loading Dashboard Data...</Typography>
+        </Box>
+      ) : (
+        <>
+          {/* 8-Grid Summary Cards */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                sm: "1fr 1fr",
+                md: "repeat(4, 1fr)",
+              },
+              gap: 2.5,
+              mt: 4,
+            }}
+          >
+            {summaryCards.map((card) => (
+              <Card 
+                key={card.title} 
+                sx={{ 
+                  borderRadius: 2,
+                  borderTop: `4px solid ${card.borderColor}`,
+                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"
+                }}
+              >
+                <CardContent>
+                  <Typography color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
+                    {card.title}
+                  </Typography>
 
-              <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-                {card.value}
-              </Typography>
+                  <Typography variant="h4" sx={{ fontWeight: "bold", my: 1 }}>
+                    {card.value}
+                  </Typography>
 
-              <Typography variant="body2" color="text.secondary">
-                {card.helper}
-              </Typography>
-            </CardContent>
-          </Card>
-        ))}
-      </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    {card.helper}
+                  </Typography>
+                </CardContent>
+              </Card>
+            ))}
+          </Box>
 
-      <Box
-        sx={{
-          display: "grid",
-          gridTemplateColumns: {
-            xs: "1fr",
-            md: "1fr 1fr",
-          },
-          gap: 2,
-          mt: 3,
-        }}
-      >
-        <Card sx={{ borderRadius: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Today Expected Income
-            </Typography>
-
-            <Typography variant="h4" sx={{ fontWeight: "bold" }}>
-              Rs. {formatMoney(todayExpectedIncome)}
-            </Typography>
-
-            <Typography color="text.secondary">
-              Based on bookings starting today.
-            </Typography>
-          </CardContent>
-        </Card>
-
-        <Card sx={{ borderRadius: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Today Remittance Status
-            </Typography>
-
-            {todayRemittance ? (
-              <>
-                <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                  Rs. {formatMoney(todayRemittance.totalCollected)}
+          {/* Income and Remittance Section */}
+          <Box
+            sx={{
+              display: "grid",
+              gridTemplateColumns: {
+                xs: "1fr",
+                md: "1fr 1fr",
+              },
+              gap: 3,
+              mt: 4,
+            }}
+          >
+            <Card sx={{ 
+              borderRadius: 2, 
+              backgroundColor: "#fff7ed", // Very light orange
+              border: "1px solid #fed7aa"
+            }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ color: "#c2410c", fontWeight: "bold" }}>
+                  Today Expected Income
                 </Typography>
 
-                <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  Difference: Rs. {formatMoney(todayRemittance.discrepancy)}
-                </Typography>
-
-                <Chip
-                  label={getRemittanceStatusLabel(todayRemittance.discrepancy)}
-                  color={getRemittanceStatusColor(todayRemittance.discrepancy)}
-                  size="small"
-                />
-              </>
-            ) : (
-              <>
-                <Typography variant="h5" sx={{ fontWeight: "bold" }}>
-                  Not Recorded
+                <Typography variant="h3" sx={{ fontWeight: "bold", color: "#ea580c", my: 2 }}>
+                  Rs. {formatMoney(todayExpectedIncome)}
                 </Typography>
 
                 <Typography color="text.secondary">
-                  No remittance entered for today.
+                  Based on bookings starting today.
                 </Typography>
-              </>
-            )}
-          </CardContent>
-        </Card>
-      </Box>
+              </CardContent>
+            </Card>
 
-      <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h5" gutterBottom>
-          Recent Bookings
-        </Typography>
+            <Card sx={{ 
+              borderRadius: 2,
+              backgroundColor: todayRemittance 
+                ? (Number(todayRemittance.discrepancy) < 0 ? "#fef2f2" : "#f0fdf4") // Light red if short, light green if good
+                : "#f3f4f6" // Grey if not recorded
+            }}>
+              <CardContent>
+                <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+                  Today Remittance Status
+                </Typography>
 
-        <Box sx={{ overflowX: "auto" }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Room</TableCell>
-                <TableCell>Guest</TableCell>
-                <TableCell>Check In</TableCell>
-                <TableCell>Check Out</TableCell>
-                <TableCell>Total Due</TableCell>
-                <TableCell>Status</TableCell>
-              </TableRow>
-            </TableHead>
+                {todayRemittance ? (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: "bold", mb: 1 }}>
+                      Rs. {formatMoney(todayRemittance.totalCollected)}
+                    </Typography>
 
-            <TableBody>
-              {recentBookings.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell>{booking.room?.roomNumber}</TableCell>
-                  <TableCell>{booking.guestName}</TableCell>
-                  <TableCell>{formatDateTime(booking.checkIn)}</TableCell>
-                  <TableCell>{formatDateTime(booking.checkOut)}</TableCell>
-                  <TableCell>Rs. {formatMoney(booking.totalDue)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={booking.status}
-                      color={getBookingStatusColor(booking.status)}
-                      size="small"
-                    />
-                  </TableCell>
-                </TableRow>
-              ))}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+                      <Typography color="text.secondary">
+                        Difference: <strong>Rs. {formatMoney(todayRemittance.discrepancy)}</strong>
+                      </Typography>
 
-              {recentBookings.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={6}>No recent bookings found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
-      </Paper>
+                      <Chip
+                        label={getRemittanceStatusLabel(todayRemittance.discrepancy)}
+                        color={getRemittanceStatusColor(todayRemittance.discrepancy)}
+                        size="small"
+                        sx={{ fontWeight: "bold" }}
+                      />
+                    </Box>
+                  </Box>
+                ) : (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: "bold", color: "#9ca3af", mb: 1 }}>
+                      Not Recorded
+                    </Typography>
+
+                    <Typography color="text.secondary" sx={{ mt: 2 }}>
+                      No remittance entered for today.
+                    </Typography>
+                  </Box>
+                )}
+              </CardContent>
+            </Card>
+          </Box>
+
+          {/* Recent Bookings Table */}
+          <Paper sx={{ mt: 4, p: 3, borderRadius: 2, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
+            <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
+              Recent Bookings
+            </Typography>
+
+            <Box sx={{ overflowX: "auto", mt: 2 }}>
+              <Table>
+                <TableHead sx={{ backgroundColor: "#f9fafb" }}>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: "bold" }}>Room</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Guest</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Check In</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Check Out</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Total Due</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                  </TableRow>
+                </TableHead>
+
+                <TableBody>
+                  {recentBookings.map((booking) => (
+                    <TableRow key={booking.id} hover>
+                      <TableCell>{booking.room?.roomNumber}</TableCell>
+                      <TableCell>{booking.guestName}</TableCell>
+                      <TableCell>{formatDateTime(booking.checkIn)}</TableCell>
+                      <TableCell>{formatDateTime(booking.checkOut)}</TableCell>
+                      <TableCell sx={{ fontWeight: 500 }}>Rs. {formatMoney(booking.totalDue)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={booking.status}
+                          color={getBookingStatusColor(booking.status)}
+                          size="small"
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {recentBookings.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                        No recent bookings found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </Box>
+          </Paper>
+        </>
+      )}
 
       <Snackbar
         open={!!error}

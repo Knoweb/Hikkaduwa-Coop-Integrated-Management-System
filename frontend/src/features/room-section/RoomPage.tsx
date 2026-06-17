@@ -24,6 +24,15 @@ import {
 } from "@mui/material";
 import { API_BASE_URLS } from "../../api/apiConfig";
 
+type ChipColor =
+  | "default"
+  | "primary"
+  | "secondary"
+  | "error"
+  | "info"
+  | "success"
+  | "warning";
+
 type Room = {
   id: string;
   roomNumber: string;
@@ -39,8 +48,6 @@ function RoomPage() {
   const [roomType, setRoomType] = useState("AC");
   const [basePrice, setBasePrice] = useState("");
   const [status, setStatus] = useState("AVAILABLE");
-
-  const [roomStatusValues, setRoomStatusValues] = useState<Record<string, string>>({});
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState("");
@@ -65,17 +72,13 @@ function RoomPage() {
 
       const data: Room[] = await response.json();
 
-      const sortedRooms = data.sort((a, b) => {
-        return Number(a.roomNumber) - Number(b.roomNumber);
-      });
+      const sortedRooms = data.sort((a, b) =>
+        a.roomNumber.localeCompare(b.roomNumber, undefined, {
+          numeric: true,
+        })
+      );
 
       setRooms(sortedRooms);
-
-      const statusMap: Record<string, string> = {};
-      data.forEach((room) => {
-        statusMap[room.id] = room.status;
-      });
-      setRoomStatusValues(statusMap);
     } catch (err) {
       console.error(err);
       setError("Failed to load rooms. Check room-section-service on port 8084.");
@@ -124,44 +127,6 @@ function RoomPage() {
     } catch (err) {
       console.error(err);
       setError("Room create failed. Maybe room number already exists.");
-    }
-  };
-
-  const handleStatusChange = (roomId: string, newStatus: string) => {
-    setRoomStatusValues((previous) => ({
-      ...previous,
-      [roomId]: newStatus,
-    }));
-  };
-
-  const handleUpdateStatus = async (roomId: string) => {
-    const selectedStatus = roomStatusValues[roomId];
-
-    if (!selectedStatus) {
-      setError("Please select a status.");
-      return;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URLS.roomSection}/${roomId}/status`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          status: selectedStatus,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Status update failed");
-      }
-
-      await loadRooms();
-      setMessage("Room status updated successfully.");
-    } catch (err) {
-      console.error(err);
-      setError("Room status update failed.");
     }
   };
 
@@ -216,20 +181,12 @@ function RoomPage() {
     }
   };
 
-  const getStatusColor = (roomStatus: string) => {
-    if (roomStatus === "AVAILABLE") {
-      return "success";
-    }
+  const getStatusColor = (roomStatus: string): ChipColor => {
+    if (roomStatus === "AVAILABLE") return "success";
+    if (roomStatus === "OCCUPIED") return "error";
+    if (roomStatus === "MAINTENANCE") return "warning";
 
-    if (roomStatus === "OCCUPIED") {
-      return "error";
-    }
-
-    if (roomStatus === "MAINTENANCE") {
-      return "default";
-    }
-
-    return "primary";
+    return "default";
   };
 
   return (
@@ -239,13 +196,24 @@ function RoomPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Add rooms and update room details.
+        Add rooms, edit room details, and update room status.
       </Typography>
 
-      <Card sx={{ mt: 3 }}>
-        <CardContent>
+      <Card
+        sx={{
+          mt: 3,
+          maxWidth: 950,
+          mx: "auto",
+          borderRadius: 3,
+        }}
+      >
+        <CardContent sx={{ p: 3 }}>
           <Typography variant="h5" gutterBottom>
             Add New Room
+          </Typography>
+
+          <Typography color="text.secondary" sx={{ mb: 2 }}>
+            Enter room details and save the room into the Room Section module.
           </Typography>
 
           <Box component="form" onSubmit={handleCreateRoom}>
@@ -254,10 +222,9 @@ function RoomPage() {
                 display: "grid",
                 gridTemplateColumns: {
                   xs: "1fr",
-                  md: "1fr 1fr 1fr 1fr auto",
+                  md: "1fr 1fr",
                 },
                 gap: 2,
-                alignItems: "center",
               }}
             >
               <TextField
@@ -300,16 +267,21 @@ function RoomPage() {
                 <MenuItem value="MAINTENANCE">MAINTENANCE</MenuItem>
               </TextField>
 
-              <Button type="submit" variant="contained"
-              sx={{
-                    backgroundColor: "#f97316",
-                    color: "white",
-                    "&:hover": {
-                      backgroundColor: "#ea580c", 
-                    },
-                  }}>
-                Add Room
-              </Button>
+              <Box
+                sx={{
+                  gridColumn: {
+                    xs: "span 1",
+                    md: "span 2",
+                  },
+                  display: "flex",
+                  justifyContent: "flex-end",
+                }}
+              >
+                <Button type="submit" variant="contained" size="large"
+                sx={{backgroundColor: "#f97316",color: "white","&:hover": {backgroundColor: "#ea580c",},}}>
+                  Add Room
+                </Button>
+              </Box>
             </Box>
           </Box>
         </CardContent>
@@ -338,7 +310,9 @@ function RoomPage() {
               {rooms.map((room) => (
                 <TableRow key={room.id}>
                   <TableCell>{room.roomNumber}</TableCell>
+
                   <TableCell>{room.roomType}</TableCell>
+
                   <TableCell>Rs. {room.basePrice}</TableCell>
 
                   <TableCell>
@@ -354,15 +328,7 @@ function RoomPage() {
                       variant="contained"
                       size="small"
                       onClick={() => openEditDialog(room)}
-                      sx={{
-                              fontWeight: 'bold',
-                              backgroundColor: "#f97316",
-                              color: "white",
-                              "&:hover": {
-                                backgroundColor: "#ea580c",
-                              },
-                            }}
-                    >
+                      sx={{fontWeight: 'bold',backgroundColor: "#de6f40",color: "white","&:hover": { backgroundColor: "#ea580c",},}}>
                       Edit
                     </Button>
                   </TableCell>
@@ -426,26 +392,28 @@ function RoomPage() {
 
         <DialogActions>
           <Button onClick={closeEditDialog}>Cancel</Button>
-          <Button variant="contained" onClick={handleUpdateRoom}
-          sx={{
-                backgroundColor: "#f97316",
-                color: "white",
-                "&:hover": {
-                backgroundColor: "#ea580c", 
-                },
-              }}>
+
+          <Button variant="contained" onClick={handleUpdateRoom}>
             Save Changes
           </Button>
         </DialogActions>
       </Dialog>
 
-      <Snackbar open={!!message} autoHideDuration={3000} onClose={() => setMessage("")}>
+      <Snackbar
+        open={!!message}
+        autoHideDuration={3000}
+        onClose={() => setMessage("")}
+      >
         <Alert severity="success" onClose={() => setMessage("")}>
           {message}
         </Alert>
       </Snackbar>
 
-      <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError("")}>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={4000}
+        onClose={() => setError("")}
+      >
         <Alert severity="error" onClose={() => setError("")}>
           {error}
         </Alert>
