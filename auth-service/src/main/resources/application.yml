@@ -3,7 +3,7 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/coop_db?currentSchema=schema_auth
+    url: jdbc:postgresql://localhost:5433/coop_db?currentSchema=schema_admin
     username: postgres
     password: root
     driver-class-name: org.postgresql.Driver
