@@ -25,34 +25,40 @@ const Login: React.FC = () => {
         setIsLoading(true);
 
         try {
-            await loginUser(username, password);
+            // 1. Get the actual user data from your backend
+            const userData = await loginUser(username, password) as any;
+            const actualRole = userData.role; 
             
-            // --- NEW: Save the user's role to local storage for the App.tsx RootBoundary ---
-            localStorage.setItem('user_role', section);
+            // 2. Save the REAL role
+            localStorage.setItem('user_role', actualRole);
             
-            // --- UPDATED: Explicit routing matrix pointing to the new Domain Layouts ---
+            // 3. Routing Logic: Master Key unlocks ALL doors, specific keys unlock ONE door
             switch (section) {
                 case 'milk-shop':
+                    if (actualRole !== 'ROLE_ADMIN' && actualRole !== 'ROLE_MILK_SHOP') throw new Error("Unauthorized");
                     navigate('/milk-shop/dashboard');
                     break;
                 case 'beer-garden':
+                    if (actualRole !== 'ROLE_ADMIN' && actualRole !== 'ROLE_BEER_GARDEN') throw new Error("Unauthorized");
                     navigate('/beer-garden/dashboard');
                     break;
                 case 'room-section':
+                    if (actualRole !== 'ROLE_ADMIN' && actualRole !== 'ROLE_ROOM_BOOKING') throw new Error("Unauthorized");
                     navigate('/rooms/dashboard');
                     break;
                 case 'dashboard':
+                    if (actualRole !== 'ROLE_ADMIN') throw new Error("Unauthorized");
                     navigate('/admin/dashboard');
                     break;
                 default:
-                    navigate('/admin/dashboard');
+                    throw new Error("Invalid routing selection.");
             }
             
         } catch (err: any) {
-            const status = err.response?.status;
+            const status = err?.response?.status;
             setErrorMsg(
-                status === 403 
-                    ? 'Authentication failed: Incorrect username or password.' 
+                status === 403 || err.message === "Unauthorized"
+                    ? 'Authentication failed: Unauthorized access to this department.' 
                     : 'System connection error. Please try again.'
             );
         } finally {
