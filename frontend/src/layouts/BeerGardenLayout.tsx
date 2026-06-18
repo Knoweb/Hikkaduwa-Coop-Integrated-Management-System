@@ -15,6 +15,8 @@ function BeerGardenLayout() {
   const menuItems = [
     { label: "Logistics Dashboard", path: "/beer-garden/dashboard" },
     { label: "Liquor Issuance", path: "/beer-garden/issuance" },
+    { label: "Supplier Management", path: "/beer-garden/suppliers" },
+    { label: "Goods Received (GRN)", path: "/beer-garden/grn" },
     { label: "Price Matrix", path: "/beer-garden/prices" },
     { label: "Commissions", path: "/beer-garden/commissions" },
   ];

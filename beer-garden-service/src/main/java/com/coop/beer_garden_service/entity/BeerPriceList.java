@@ -3,7 +3,7 @@ package com.coop.beer_garden_service.entity;
 import jakarta.persistence.*;
 import lombok.Data;
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
@@ -14,10 +14,14 @@ public class BeerPriceList {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    private String beerName;
-    private BigDecimal unitPrice;
-    private LocalDate effectiveDate;
+    @Column(nullable = false)
+    private UUID beerItemId;
 
-    // This naming must exactly match the findByIsActiveTrue repository method
-    private Boolean isActive;
+    @Column(nullable = false, precision = 12, scale = 2)
+    private BigDecimal unitPrice;
+
+    private LocalDateTime effectiveDate = LocalDateTime.now();
+
+    @Column(nullable = false)
+    private String authorizedBy;;
 }

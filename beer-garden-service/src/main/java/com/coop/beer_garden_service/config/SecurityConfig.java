@@ -10,6 +10,7 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.http.HttpMethod;
 
 @Configuration
 @EnableWebSecurity
@@ -26,10 +27,15 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/beer-garden/prices").permitAll()
-                        .requestMatchers("/api/v1/beer-garden/issuances").permitAll()
+                        .requestMatchers("/api/v1/beer-garden/suppliers").permitAll()
+                        .requestMatchers("/api/v1/beer-garden/grn").permitAll()
+                        .requestMatchers("/api/v1/beer-garden/items").permitAll()
+                        .requestMatchers("/api/v1/beer-garden/supplier-payments").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/beer-garden/items/*/price").permitAll()
+                        .requestMatchers("/api/v1/beer-garden/issuance").permitAll()
+                        .requestMatchers(HttpMethod.PUT, "/api/v1/beer-garden/items/**").hasRole("ADMIN")
                         .anyRequest().authenticated()
                 )
-                // Api hadapu filter eka add karanawa
                 .addFilterBefore(headerAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

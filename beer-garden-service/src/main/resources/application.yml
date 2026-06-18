@@ -1,11 +1,10 @@
 server:
-  port: 9001  # Use 9001, since 9000 is taken by Auth
+  port: 9001
 
 spring:
   application:
     name: beer-garden-service
   datasource:
-    # Point to the same DB, but ensure your Hibernate dialect/ddl-auto is configured
     url: jdbc:postgresql://localhost:5433/coop_db?currentSchema=schema_beer_garden
     username: postgres
     password: root
@@ -14,6 +13,11 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
+logging:
+  level:
+    com.coop.beer_garden_service: DEBUG
+    org.springframework.web: DEBUG
 
 eureka:
   client:

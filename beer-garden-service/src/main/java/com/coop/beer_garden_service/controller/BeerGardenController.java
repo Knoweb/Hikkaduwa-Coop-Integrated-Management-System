@@ -7,7 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.math.BigDecimal; // <--- YOU MUST ADD THIS LINE
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -17,24 +17,7 @@ public class BeerGardenController {
     @Autowired
     private BeerGardenService beerGardenService;
 
-    @PostMapping("/invoices")
-    public ResponseEntity<IssuanceInvoice> createInvoice(@RequestBody InvoiceRequest request) {
-        if (request.getCommissionPerUnit() == null) {
-            request.setCommissionPerUnit(new BigDecimal("50.00"));
-        }
-
-        IssuanceInvoice newInvoice = beerGardenService.createInvoice(request);
-        return ResponseEntity.ok(newInvoice);
-    }
-
-    @GetMapping("/receivables")
-    public ResponseEntity<List<IssuanceInvoice>> getReceivables(
-            @RequestParam(required = false, defaultValue = "UNPAID") String status) {
-
-        List<IssuanceInvoice> invoices = beerGardenService.getReceivables(status);
-        return ResponseEntity.ok(invoices);
-    }
-
+    // Use this for the restaurant issuance feature
     @PostMapping("/issuances")
     public ResponseEntity<IssuanceInvoice> createIssuance(@RequestBody InvoiceRequest request) {
         // 1. Validate mandatory fields
@@ -42,14 +25,19 @@ public class BeerGardenController {
             return ResponseEntity.badRequest().build();
         }
 
-        // 2. Set defaults if missing
+        // 2. Set default commission if not provided
         if (request.getCommissionPerUnit() == null) {
             request.setCommissionPerUnit(new BigDecimal("50.00"));
         }
 
-        // 3. Process the issuance
+        // 3. Process the issuance through the service
         IssuanceInvoice savedIssuance = beerGardenService.createIssuance(request);
 
         return ResponseEntity.ok(savedIssuance);
+    }
+
+    @GetMapping("/invoices")
+    public ResponseEntity<List<IssuanceInvoice>> getAllInvoices() {
+        return ResponseEntity.ok(beerGardenService.getReceivables()); // Parameter නැතුව
     }
 }

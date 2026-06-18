@@ -125,32 +125,97 @@ CREATE TABLE IF NOT EXISTS schema_milk_shop.stock_adjustment_log (
 );
 
 -- ==============================================================================
--- 3. BEER GARDEN SCHEMA (schema_beer_garden)
+-- 3. BEER GARDEN SCHEMA (schema_beer_garden) - FULLY NORMALIZED
 -- ==============================================================================
 
+-- 1. Master Item Catalog (Single Source of Truth)
+CREATE TABLE schema_beer_garden.beer_items (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    item_code VARCHAR(50) UNIQUE NOT NULL,
+    beer_name VARCHAR(100) NOT NULL,
+    category VARCHAR(50),
+    current_stock INT DEFAULT 0 CHECK (current_stock >= 0),
+    unit_price DECIMAL(10, 2) -- The base selling price
+);
+
+-- 2. Supplier Profiles
+CREATE TABLE schema_beer_garden.suppliers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    supplier_name VARCHAR(255) NOT NULL,
+    license_number VARCHAR(100),
+    territory VARCHAR(100),
+    contact_details VARCHAR(255),
+    credit_terms VARCHAR(100),
+    outstanding_balance DECIMAL(15, 2) DEFAULT 0.00,
+    is_active BOOLEAN DEFAULT TRUE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 3. Price List (Linked to Item ID, NOT String)
 CREATE TABLE schema_beer_garden.beer_price_list (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    beer_name VARCHAR(100) NOT NULL,
-    unit_price DECIMAL(10, 2) NOT NULL,
-    effective_date DATE NOT NULL,
+    beer_item_id UUID NOT NULL REFERENCES schema_beer_garden.beer_items(id) ON DELETE CASCADE,
+    unit_price DECIMAL(10, 2) NOT NULL CHECK (unit_price >= 0),
+    effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
     is_active BOOLEAN DEFAULT TRUE
 );
 
-CREATE TABLE schema_beer_garden.issuance_invoice (
+-- 4. GRN Invoice (With Cash/Credit limits built-in)
+CREATE TABLE schema_beer_garden.grn_invoice (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    restaurant_id UUID NOT NULL, -- Soft reference to restaurant entity if managed
-    total_liquor_value DECIMAL(12, 2) NOT NULL,
-    commission_total DECIMAL(10, 2) NOT NULL,
-    grand_total DECIMAL(12, 2) NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'UNPAID', -- UNPAID, PARTIAL, PAID, OVERDUE
-    issued_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    supplier_id UUID NOT NULL REFERENCES schema_beer_garden.suppliers(id),
+    invoice_reference VARCHAR(100) NOT NULL,
+    total_amount DECIMAL(12, 2) NOT NULL,
+    received_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payment_method VARCHAR(20) NOT NULL DEFAULT 'CREDIT' CHECK (payment_method IN ('CASH', 'CREDIT')),
+    amount_paid DECIMAL(12, 2) DEFAULT 0.00,
+    payment_status VARCHAR(20) GENERATED ALWAYS AS (
+        CASE 
+            WHEN amount_paid >= total_amount THEN 'PAID'
+            WHEN amount_paid > 0 THEN 'PARTIAL'
+            ELSE 'PENDING'
+        END
+    ) STORED
 );
 
+-- 5. GRN Item (Linked to Item ID, NOT String)
+CREATE TABLE schema_beer_garden.grn_item (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    grn_invoice_id UUID NOT NULL REFERENCES schema_beer_garden.grn_invoice(id) ON DELETE CASCADE,
+    beer_item_id UUID NOT NULL REFERENCES schema_beer_garden.beer_items(id),
+    quantity INT NOT NULL CHECK (quantity > 0),
+    unit_cost DECIMAL(10, 2) NOT NULL CHECK (unit_cost >= 0),
+    line_total DECIMAL(12, 2) NOT NULL
+);
+
+-- 6. Supplier Payments Ledger (Accounts Payable)
+CREATE TABLE schema_beer_garden.supplier_payments (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    supplier_id UUID NOT NULL REFERENCES schema_beer_garden.suppliers(id),
+    grn_invoice_id UUID REFERENCES schema_beer_garden.grn_invoice(id), 
+    payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    amount DECIMAL(12, 2) NOT NULL CHECK (amount > 0),
+    payment_reference VARCHAR(100)
+);
+
+-- 7. Issuance Invoice (Sales)
+CREATE TABLE schema_beer_garden.issuance_invoice (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_number VARCHAR(50) NOT NULL UNIQUE,
+    operator_name VARCHAR(150) NOT NULL,
+    issued_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    total_stock_value NUMERIC(12, 2) NOT NULL,
+    total_commission NUMERIC(12, 2) NOT NULL,
+    grand_total NUMERIC(12, 2) NOT NULL,
+    issued_by_role VARCHAR(255) NOT NULL
+);
+
+-- 8. Payment Record (For Issuance Invoices)
 CREATE TABLE schema_beer_garden.payment_record (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id UUID NOT NULL REFERENCES schema_beer_garden.issuance_invoice(id),
     amount_paid DECIMAL(12, 2) NOT NULL,
-    payment_method VARCHAR(20) NOT NULL, -- CASH, CHEQUE
+    payment_method VARCHAR(20) NOT NULL, 
     cheque_ref VARCHAR(50),
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

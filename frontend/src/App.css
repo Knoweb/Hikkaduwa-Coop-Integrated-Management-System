@@ -182,3 +182,22 @@
     border-right-color: var(--border);
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden; /* Hide EVERYTHING by default */
+  }
+  .print-only, .print-only * {
+    visibility: visible; /* Show ONLY the invoice */
+    display: block !important;
+  }
+  .print-only {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .no-print {
+    display: none !important; /* Force hide the form */
+  }
+}
