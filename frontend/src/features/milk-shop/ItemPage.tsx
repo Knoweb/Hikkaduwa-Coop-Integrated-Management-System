@@ -193,7 +193,7 @@ function ItemPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom>
         Item / Product Management
       </Typography>
 
@@ -210,7 +210,7 @@ function ItemPage() {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
             Add New Item
           </Typography>
 
@@ -289,7 +289,7 @@ function ItemPage() {
       </Card>
 
       <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
           Item List
         </Typography>
 
@@ -298,29 +298,39 @@ function ItemPage() {
         ) : (
           <Box sx={{ overflowX: "auto" }}>
             <Table>
-              <TableHead>
+              <TableHead sx={{ backgroundColor: "#f3f4f6", borderBottom: "2px solid #e5e7eb" }}>
                 <TableRow>
-                  <TableCell>Item Name</TableCell>
-                  <TableCell>Category</TableCell>
-                  <TableCell>Unit Price</TableCell>
-                  <TableCell>Reorder Level</TableCell>
-                  <TableCell>Status</TableCell>
-                  <TableCell>Edit</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Item Name</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Category</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Unit Price</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Reorder Level</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Status</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Edit</TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
                 {items.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>{item.name}</TableCell>
+                    {/* 1. Item Name: Bold and Dark to anchor the row */}
+                    <TableCell sx={{ fontWeight: "bold", color: "#111827" }}>
+                      {item.name}
+                    </TableCell>
+                    
                     <TableCell>{item.category}</TableCell>
-                    <TableCell>Rs. {formatMoney(item.unitPrice)}</TableCell>
+                    
+                    {/* 2. Unit Price: Bold and slightly larger to emphasize the number */}
+                    <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
+                      Rs. {formatMoney(item.unitPrice)}
+                    </TableCell>
+                    
                     <TableCell>{item.reorderLevel}</TableCell>
                     <TableCell>
                       <Chip
                         label={item.isActive === false ? "INACTIVE" : "ACTIVE"}
                         color={item.isActive === false ? "default" : "success"}
                         size="small"
+                        sx={{ fontWeight: "bold" }}
                       />
                     </TableCell>
                     <TableCell>
@@ -337,7 +347,9 @@ function ItemPage() {
 
                 {items.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={6}>No items found</TableCell>
+                    <TableCell colSpan={6} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                      No items found
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -352,7 +364,7 @@ function ItemPage() {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Edit Item</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Edit Item</DialogTitle>
 
         <DialogContent>
           <Box sx={{ display: "grid", gap: 2, mt: 1 }}>

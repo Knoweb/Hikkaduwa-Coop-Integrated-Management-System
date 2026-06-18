@@ -36,6 +36,12 @@ public class DailySales {
     @Column(name = "operator_id", nullable = false)
     private UUID operatorId;
 
+    @Column(name = "received_by", length = 100)
+    private String receivedBy;
+
+    @Column(length = 255)
+    private String remarks;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 }

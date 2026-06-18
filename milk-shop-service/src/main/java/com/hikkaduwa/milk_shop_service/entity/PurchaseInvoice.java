@@ -25,11 +25,17 @@ public class PurchaseInvoice {
     @JoinColumn(name = "supplier_id", nullable = false)
     private Supplier supplier;
 
+    @Column(name = "invoice_number", length = 50)
+    private String invoiceNumber;
+
     @Column(name = "total_amount", nullable = false, precision = 12, scale = 2)
     private BigDecimal totalAmount;
 
     @Column(name = "invoice_date", nullable = false)
     private LocalDate invoiceDate;
+
+    @Column(length = 255)
+    private String remarks;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;

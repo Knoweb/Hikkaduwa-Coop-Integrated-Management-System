@@ -19,6 +19,10 @@ import RemittancePage from "./features/room-section/RemittancePage";
 import MilkShopDashboard from "./features/milk-shop/MilkShopDashboard";
 import SupplierPage from "./features/milk-shop/SupplierPage";
 import ItemPage from "./features/milk-shop/ItemPage";
+import GrnPage from "./features/milk-shop/GrnPage";
+import StockLedgerPage from "./features/milk-shop/StockLedgerPage";
+import DailySalesPage from "./features/milk-shop/DailySalesPage";
+import StockAdjustmentPage from "./features/milk-shop/stock-adjustments/StockAdjustmentPage";
 
 import BeerGardenDashboard from "./features/beer-garden/BeerGardenDashboard";
 import PriceMatrix from "./features/beer-garden/PriceMatrix";
@@ -80,9 +84,10 @@ function App() {
             <Route path="dashboard" element={<MilkShopDashboard />} />
             <Route path="suppliers" element={<SupplierPage />} />
             <Route path="items" element={<ItemPage />} />
-            <Route path="stock" element={<MilkShopDashboard />} />
-            <Route path="grn" element={<MilkShopDashboard />} />
-            <Route path="daily-sales" element={<MilkShopDashboard />} />
+            <Route path="stock" element={<StockLedgerPage />} />
+            <Route path="grn" element={<GrnPage />} />
+            <Route path="daily-sales" element={<DailySalesPage />} />
+            <Route path="stock-adjustments" element={<StockAdjustmentPage />} />
           </Route>
 
           {/* 4. BEER GARDEN DOMAIN */}

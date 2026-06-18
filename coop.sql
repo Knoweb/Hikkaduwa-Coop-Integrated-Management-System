@@ -74,8 +74,10 @@ CREATE TABLE schema_milk_shop.stock_ledger (
 CREATE TABLE schema_milk_shop.purchase_invoice ( -- Represents Goods Received Note (GRN)
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     supplier_id UUID NOT NULL REFERENCES schema_milk_shop.supplier(id),
+    invoice_number VARCHAR(50),
     total_amount DECIMAL(12, 2) NOT NULL,
     invoice_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    remarks VARCHAR(255),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -95,7 +97,30 @@ CREATE TABLE schema_milk_shop.daily_sales (
     total_sales_value DECIMAL(12, 2) NOT NULL,
     cash_handed_over DECIMAL(12, 2) NOT NULL,
     discrepancy DECIMAL(10, 2) DEFAULT 0.00,
-    operator_id UUID NOT NULL, -- Soft reference to admin.users
+    operator_id UUID NOT NULL,
+    received_by VARCHAR(100),
+    remarks VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS schema_milk_shop.stock_adjustment_log (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+
+    item_id UUID NOT NULL REFERENCES schema_milk_shop.item_product(id),
+
+    adjustment_type VARCHAR(50) NOT NULL,
+
+    previous_qty INT NOT NULL,
+    quantity_changed INT NOT NULL,
+    new_qty INT NOT NULL,
+
+    unit_price DECIMAL(10, 2) NOT NULL DEFAULT 0.00,
+    total_amount DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+
+    reason VARCHAR(100),
+    remarks VARCHAR(255),
+
+    adjustment_date DATE NOT NULL DEFAULT CURRENT_DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

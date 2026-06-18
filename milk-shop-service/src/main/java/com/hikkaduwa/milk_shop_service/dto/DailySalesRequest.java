@@ -26,4 +26,8 @@ public class DailySalesRequest {
 
     @NotNull(message = "Operator ID is required")
     private UUID operatorId;
+
+    private String receivedBy;
+
+    private String remarks;
 }

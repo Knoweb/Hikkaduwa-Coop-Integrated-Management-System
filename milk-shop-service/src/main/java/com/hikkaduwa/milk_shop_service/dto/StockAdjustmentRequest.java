@@ -1,26 +1,31 @@
 package com.hikkaduwa.milk_shop_service.dto;
 
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 
 @Getter
 @Setter
-public class GrnItemRequest {
+public class StockAdjustmentRequest {
 
     @NotNull(message = "Item ID is required")
     private UUID itemId;
 
+    @NotBlank(message = "Adjustment type is required")
+    private String adjustmentType;
+
     @NotNull(message = "Quantity is required")
-    @Min(value = 1, message = "Quantity must be at least 1")
+    @Min(value = 0, message = "Quantity cannot be negative")
     private Integer quantity;
 
-    @NotNull(message = "Unit price is required")
-    @DecimalMin(value = "0.0", inclusive = false, message = "Unit price must be greater than 0")
-    private BigDecimal unitPrice;
+    private String reason;
+
+    private String remarks;
+
+    private LocalDate adjustmentDate;
 }

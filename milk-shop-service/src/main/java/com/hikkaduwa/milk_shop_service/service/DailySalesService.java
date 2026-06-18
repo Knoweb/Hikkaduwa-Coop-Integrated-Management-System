@@ -33,22 +33,51 @@ public class DailySalesService {
                 .cashHandedOver(request.getCashHandedOver())
                 .discrepancy(discrepancy)
                 .operatorId(request.getOperatorId())
+                .receivedBy(request.getReceivedBy())
+                .remarks(request.getRemarks())
                 .createdAt(LocalDateTime.now())
                 .build();
 
         DailySales saved = dailySalesRepository.save(dailySales);
 
-        return DailySalesResponse.builder()
-                .id(saved.getId())
-                .salesDate(saved.getSalesDate())
-                .totalSalesValue(saved.getTotalSalesValue())
-                .cashHandedOver(saved.getCashHandedOver())
-                .discrepancy(saved.getDiscrepancy())
-                .message("Daily sales saved successfully")
-                .build();
+        return buildResponse(saved);
     }
 
-    public List<DailySales> getAllDailySales() {
-        return dailySalesRepository.findAll();
+    public List<DailySalesResponse> getAllDailySales() {
+        return dailySalesRepository.findAllByOrderBySalesDateDesc()
+                .stream()
+                .map(this::buildResponse)
+                .toList();
+    }
+
+    private DailySalesResponse buildResponse(DailySales dailySales) {
+        BigDecimal discrepancy = dailySales.getDiscrepancy();
+
+        String status;
+        String message;
+
+        if (discrepancy.compareTo(BigDecimal.ZERO) == 0) {
+            status = "BALANCED";
+            message = "Cash handover is balanced.";
+        } else if (discrepancy.compareTo(BigDecimal.ZERO) < 0) {
+            status = "SHORT";
+            message = "Cash handover is short.";
+        } else {
+            status = "EXTRA";
+            message = "Extra cash handed over.";
+        }
+
+        return DailySalesResponse.builder()
+                .id(dailySales.getId())
+                .salesDate(dailySales.getSalesDate())
+                .totalSalesValue(dailySales.getTotalSalesValue())
+                .cashHandedOver(dailySales.getCashHandedOver())
+                .discrepancy(dailySales.getDiscrepancy())
+                .operatorId(dailySales.getOperatorId())
+                .receivedBy(dailySales.getReceivedBy())
+                .remarks(dailySales.getRemarks())
+                .status(status)
+                .message(message)
+                .build();
     }
 }

@@ -16,5 +16,9 @@ public class DailySalesResponse {
     private BigDecimal totalSalesValue;
     private BigDecimal cashHandedOver;
     private BigDecimal discrepancy;
+    private UUID operatorId;
+    private String receivedBy;
+    private String remarks;
+    private String status;
     private String message;
 }
