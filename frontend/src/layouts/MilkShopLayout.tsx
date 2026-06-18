@@ -28,21 +28,25 @@ function MilkShopLayout() {
       path: "/milk-shop/items",
     },
     {
+      label: "GRN / Purchase Entry",
+      path: "/milk-shop/grn",
+    },
+    {
       label: "Stock Ledger",
       path: "/milk-shop/stock",
     },
     {
-      label: "GRN",
-      path: "/milk-shop/grn",
+      label: "Stock Adjustments",
+      path: "/milk-shop/stock-adjustments",
     },
     {
-      label: "Daily Sales",
+      label: "Daily Sales / Cash Handover",
       path: "/milk-shop/daily-sales",
     },
   ];
 
   const isActive = (path: string) => {
-    return location.pathname.startsWith(path);
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 
   return (
@@ -80,37 +84,41 @@ function MilkShopLayout() {
         <Divider sx={{ borderColor: "#b91c1c" }} />
 
         <List sx={{ px: 1, mt: 1 }}>
-          {menuItems.map((item) => (
-            <ListItemButton
-              key={item.path}
-              selected={isActive(item.path)}
-              onClick={() => navigate(item.path)}
-              sx={{
-                borderRadius: 2,
-                mb: 0.5,
-                color: "white",
-                "&.Mui-selected": {
-                  backgroundColor: "#f97316",
-                  color: "white",
-                },
-                "&.Mui-selected:hover": {
-                  backgroundColor: "#ea580c",
-                },
-                "&:hover": {
-                  backgroundColor: "#991b1b",
-                },
-              }}
-            >
-              <Typography
+          {menuItems.map((item) => {
+            const active = isActive(item.path);
+
+            return (
+              <ListItemButton
+                key={item.path}
+                selected={active}
+                onClick={() => navigate(item.path)}
                 sx={{
-                  fontSize: 15,
-                  fontWeight: isActive(item.path) ? "bold" : "normal",
+                  borderRadius: 2,
+                  mb: 0.5,
+                  color: "white",
+                  "&.Mui-selected": {
+                    backgroundColor: "#f97316",
+                    color: "white",
+                  },
+                  "&.Mui-selected:hover": {
+                    backgroundColor: "#ea580c",
+                  },
+                  "&:hover": {
+                    backgroundColor: "#991b1b",
+                  },
                 }}
               >
-                {item.label}
-              </Typography>
-            </ListItemButton>
-          ))}
+                <Typography
+                  sx={{
+                    fontSize: 15,
+                    fontWeight: active ? "bold" : "normal",
+                  }}
+                >
+                  {item.label}
+                </Typography>
+              </ListItemButton>
+            );
+          })}
         </List>
 
         <Box sx={{ mt: "auto", p: 2 }}>

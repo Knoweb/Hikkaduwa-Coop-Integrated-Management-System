@@ -7,6 +7,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/v1/milk-shop/grn")
 @RequiredArgsConstructor
@@ -18,5 +20,10 @@ public class GrnController {
     @PostMapping
     public GrnResponse createGrn(@Valid @RequestBody GrnRequest request) {
         return grnService.createGrn(request);
+    }
+
+    @GetMapping
+    public List<GrnResponse> getAllGrns() {
+        return grnService.getAllGrns();
     }
 }

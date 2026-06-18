@@ -169,7 +169,7 @@ function SupplierPage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom>
         Supplier Management
       </Typography>
 
@@ -186,7 +186,7 @@ function SupplierPage() {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }} gutterBottom>
             Add New Supplier
           </Typography>
 
@@ -257,7 +257,7 @@ function SupplierPage() {
       </Card>
 
       <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h5" gutterBottom>
+        <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
           Supplier List
         </Typography>
 
@@ -266,19 +266,24 @@ function SupplierPage() {
         ) : (
           <Box sx={{ overflowX: "auto" }}>
             <Table>
-              <TableHead>
+              <TableHead sx={{ backgroundColor: "#f3f4f6", borderBottom: "2px solid #e5e7eb" }}>
                 <TableRow>
-                  <TableCell>Supplier Name</TableCell>
-                  <TableCell>Contact Number</TableCell>
-                  <TableCell>Address</TableCell>
-                  <TableCell>Edit</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Supplier Name</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Contact Number</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Address</TableCell>
+                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Edit</TableCell>
                 </TableRow>
               </TableHead>
 
               <TableBody>
                 {suppliers.map((supplier) => (
                   <TableRow key={supplier.id}>
-                    <TableCell>{supplier.name}</TableCell>
+                    
+                    {/* Supplier Name: Bold and Dark to anchor the row */}
+                    <TableCell sx={{ fontWeight: "bold", color: "#111827" }}>
+                      {supplier.name}
+                    </TableCell>
+                    
                     <TableCell>{supplier.contactNumber}</TableCell>
                     <TableCell>{supplier.address || "-"}</TableCell>
                     <TableCell>
@@ -295,7 +300,9 @@ function SupplierPage() {
 
                 {suppliers.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={4}>No suppliers found</TableCell>
+                    <TableCell colSpan={4} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                      No suppliers found
+                    </TableCell>
                   </TableRow>
                 )}
               </TableBody>
@@ -310,7 +317,7 @@ function SupplierPage() {
         fullWidth
         maxWidth="sm"
       >
-        <DialogTitle>Edit Supplier</DialogTitle>
+        <DialogTitle sx={{ fontWeight: "bold" }}>Edit Supplier</DialogTitle>
 
         <DialogContent>
           <Box sx={{ display: "grid", gap: 2, mt: 1 }}>
