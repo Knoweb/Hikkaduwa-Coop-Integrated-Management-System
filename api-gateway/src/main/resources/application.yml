@@ -6,7 +6,6 @@ spring:
     name: api-gateway
   cloud:
     gateway:
-      # 1. GLOBAL CORS POLICY: This allows your React app to pass the preflight check
       globalcors:
         cors-configurations:
           '[/**]':
@@ -19,17 +18,19 @@ spring:
               - OPTIONS
             allowedHeaders: "*"
 
-      # 2. ROUTING MATRIX: Corrected standard Spring syntax
       routes:
         - id: auth-service
-          # 3. LOAD BALANCING: Since Eureka is on, we tell the Gateway to find the Auth Service by its registered name, not a hardcoded port.
           uri: lb://AUTH-SERVICE
           predicates:
             - Path=/auth/**
           filters:
             - AuthenticationFilter
 
-# 4. SERVICE REGISTRY: Turn these on so the Gateway can find the map
+        - id: beer-garden-service
+          uri: lb://BEER-GARDEN-SERVICE
+          predicates:
+            - Path=/api/v1/beer-garden/**
+
 eureka:
   client:
     register-with-eureka: true
