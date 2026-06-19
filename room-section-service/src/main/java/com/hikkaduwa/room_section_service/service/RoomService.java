@@ -6,6 +6,7 @@ import com.hikkaduwa.room_section_service.repository.RoomRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,24 +15,37 @@ import java.util.UUID;
 public class RoomService {
 
     private final RoomRepository roomRepository;
+    private final RoomStatusSyncService roomStatusSyncService;
 
     public List<Room> getAllRooms() {
+        roomStatusSyncService.syncRoomStatuses();
         return roomRepository.findAll();
     }
 
     public Room createRoom(RoomRequest request) {
+        if (roomRepository.count() >= 10) {
+            throw new RuntimeException("Cannot add more than 10 rooms");
+        }
+
         roomRepository.findByRoomNumber(request.getRoomNumber())
                 .ifPresent(existing -> {
                     throw new RuntimeException("Room number already exists");
                 });
 
-        validateRoomStatus(request.getStatus() == null ? "AVAILABLE" : request.getStatus());
+        String roomStatus = request.getStatus() == null ? "AVAILABLE" : request.getStatus();
+
+        validateRoomStatus(roomStatus);
+
+        BigDecimal extraHourRate = request.getExtraHourRate() == null
+                ? BigDecimal.ZERO
+                : request.getExtraHourRate();
 
         Room room = Room.builder()
                 .roomNumber(request.getRoomNumber())
                 .roomType(request.getRoomType())
                 .basePrice(request.getBasePrice())
-                .status(request.getStatus() == null ? "AVAILABLE" : request.getStatus())
+                .extraHourRate(extraHourRate)
+                .status(roomStatus)
                 .build();
 
         return roomRepository.save(room);
@@ -50,9 +64,14 @@ public class RoomService {
 
         validateRoomStatus(request.getStatus());
 
+        BigDecimal extraHourRate = request.getExtraHourRate() == null
+                ? BigDecimal.ZERO
+                : request.getExtraHourRate();
+
         room.setRoomNumber(request.getRoomNumber());
         room.setRoomType(request.getRoomType());
         room.setBasePrice(request.getBasePrice());
+        room.setExtraHourRate(extraHourRate);
         room.setStatus(request.getStatus());
 
         return roomRepository.save(room);

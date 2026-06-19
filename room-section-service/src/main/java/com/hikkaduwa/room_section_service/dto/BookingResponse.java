@@ -16,12 +16,26 @@ public class BookingResponse {
     private String guestName;
     private LocalDateTime checkIn;
     private LocalDateTime checkOut;
+
     private long noOfDays;
+    private long extraHours;
+
+    private BigDecimal roomCharge;
+    private BigDecimal extraHourCharge;
+
+    private BigDecimal vatRate;
+    private BigDecimal ssclRate;
+
     private BigDecimal subTotal;
     private BigDecimal taxAmount;
     private BigDecimal totalDue;
     private BigDecimal advancePayment;
+
+    private BigDecimal finalPaymentAmount;
+    private LocalDateTime finalPaymentDate;
     private BigDecimal balanceDue;
+    private String paymentStatus;
+
     private String status;
     private String message;
 }

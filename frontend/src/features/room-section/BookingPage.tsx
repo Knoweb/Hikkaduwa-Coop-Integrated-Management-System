@@ -1,219 +1,246 @@
 import { useEffect, useState } from "react";
 import type { SyntheticEvent } from "react";
-import {
-  Alert,
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  MenuItem,
-  Paper,
-  Snackbar,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  TextField,
-  Typography,
-} from "@mui/material";
+import { Alert, Box, Snackbar, Typography } from "@mui/material";
 import { API_BASE_URLS } from "../../api/apiConfig";
 
-type ChipColor =
-  | "default"
-  | "primary"
-  | "secondary"
-  | "error"
-  | "info"
-  | "success"
-  | "warning";
+import BookingForm from "./components/BookingForm";
+import BookingList from "./components/BookingList";
+import BookingInvoiceDialog from "./components/BookingInvoiceDialog";
 
-type Room = {
+export type MoneyValue = number | string | undefined;
+
+export type Room = {
   id: string;
   roomNumber: string;
   roomType: string;
-  basePrice: number;
+  basePrice: MoneyValue;
+  extraHourRate: MoneyValue;
   status: string;
 };
 
-type Booking = {
+export type Booking = {
   id: string;
   guestName: string;
   nicPassport: string;
   checkIn: string;
   checkOut: string;
-  advancePayment: number;
-  subTotal: number;
-  taxAmount: number;
-  totalDue: number;
+
+  noOfDays?: number;
+  extraHours?: number;
+  extraHourCharge?: MoneyValue;
+  vatRate?: MoneyValue;
+  ssclRate?: MoneyValue;
+
+  advancePayment: MoneyValue;
+  finalPaymentAmount?: MoneyValue;
+  finalPaymentDate?: string | null;
+  paymentStatus?: string;
+
+  subTotal: MoneyValue;
+  taxAmount: MoneyValue;
+  totalDue: MoneyValue;
   status: string;
   room: Room;
 };
 
-const formatDateTime = (dateString: string) => {
-  if (!dateString) return "-";
-
-  const date = new Date(dateString);
-
-  return date
-    .toLocaleString("en-US", {
-      month: "2-digit",
-      day: "2-digit",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-    })
-    .replace(",", "");
+export type AvailabilityRoom = {
+  roomId: string;
+  roomNumber: string;
+  roomType: string;
+  status: string;
+  available: boolean;
 };
 
-const formatMoney = (value: number | undefined) => {
-  return Number(value || 0).toLocaleString("en-LK", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+export type BillingSetting = {
+  id: number;
+  vatRate: number;
+  ssclRate: number;
+};
+
+export type BookingFormData = {
+  roomId: string;
+  guestName: string;
+  nicPassport: string;
+  checkIn: string;
+  checkOut: string;
+  advancePayment: string;
+};
+
+const getTodayDateTime = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  const hours = String(now.getHours()).padStart(2, "0");
+  const minutes = String(now.getMinutes()).padStart(2, "0");
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
 };
 
 function BookingPage() {
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
-  const [availableRooms, setAvailableRooms] = useState<Room[]>([]);
+  const [availabilityRooms, setAvailabilityRooms] = useState<
+    AvailabilityRoom[]
+  >([]);
+
+  const [billingSetting, setBillingSetting] = useState<BillingSetting>({
+    id: 1,
+    vatRate: 18,
+    ssclRate: 2.5,
+  });
+
   const [availabilityChecked, setAvailabilityChecked] = useState(false);
 
-  const [roomId, setRoomId] = useState("");
-  const [guestName, setGuestName] = useState("");
-  const [nicPassport, setNicPassport] = useState("");
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [advancePayment, setAdvancePayment] = useState("");
+  const [formData, setFormData] = useState<BookingFormData>({
+    roomId: "",
+    guestName: "",
+    nicPassport: "",
+    checkIn: getTodayDateTime(),
+    checkOut: "",
+    advancePayment: "0",
+  });
 
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] =
     useState<Booking | null>(null);
 
+  const [loading, setLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
   const loadRooms = async () => {
-    try {
-      const response = await fetch(API_BASE_URLS.roomSection);
+    const response = await fetch(API_BASE_URLS.roomSection);
 
-      if (!response.ok) {
-        throw new Error("Failed to load rooms");
-      }
-
-      const data: Room[] = await response.json();
-
-      const sortedRooms = data.sort((a, b) => {
-        return Number(a.roomNumber) - Number(b.roomNumber);
-      });
-
-      setRooms(sortedRooms);
-    } catch (err) {
-      console.error(err);
-      setError("Failed to load rooms. Check room backend.");
+    if (!response.ok) {
+      throw new Error("Failed to load rooms");
     }
+
+    const data: Room[] = await response.json();
+
+    const sortedRooms = data.sort((a, b) =>
+      a.roomNumber.localeCompare(b.roomNumber, undefined, {
+        numeric: true,
+      })
+    );
+
+    setRooms(sortedRooms);
   };
 
   const loadBookings = async () => {
+    const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`);
+
+    if (!response.ok) {
+      throw new Error("Failed to load bookings");
+    }
+
+    const data: Booking[] = await response.json();
+
+    const sortedBookings = data.sort(
+      (a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime()
+    );
+
+    setBookings(sortedBookings);
+  };
+
+  const loadBillingSettings = async () => {
+    const response = await fetch(
+      `${API_BASE_URLS.roomSection}/billing-settings`
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to load billing settings");
+    }
+
+    const data: BillingSetting = await response.json();
+    setBillingSetting(data);
+  };
+
+  const loadData = async () => {
     try {
-      const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load bookings");
-      }
-
-      const data: Booking[] = await response.json();
-
-      const sortedBookings = data.sort((a, b) => {
-        return new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime();
-      });
-
-      setBookings(sortedBookings);
+      setLoading(true);
+      await Promise.all([loadRooms(), loadBookings(), loadBillingSettings()]);
     } catch (err) {
       console.error(err);
-      setError("Failed to load bookings.");
+      setError("Failed to load booking data. Check room-section-service.");
+    } finally {
+      setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadRooms();
-    loadBookings();
+    loadData();
   }, []);
 
   const resetAvailability = () => {
-    setAvailableRooms([]);
+    setAvailabilityRooms([]);
     setAvailabilityChecked(false);
-    setRoomId("");
   };
 
-  const isBookingOverlapping = (
-    existingCheckIn: string,
-    existingCheckOut: string,
-    newCheckIn: string,
-    newCheckOut: string
-  ) => {
-    const existingStart = new Date(existingCheckIn);
-    const existingEnd = new Date(existingCheckOut);
-    const newStart = new Date(newCheckIn);
-    const newEnd = new Date(newCheckOut);
-
-    return newStart < existingEnd && newEnd > existingStart;
-  };
-
-  const handleCheckAvailability = () => {
-    if (!checkIn || !checkOut) {
-      setError("Please select check-in and check-out dates first.");
+  const handleCheckAvailability = async () => {
+    if (!formData.checkIn || !formData.checkOut) {
+      setError("Please select check-in and check-out date/time.");
       return;
     }
 
-    if (new Date(checkIn) >= new Date(checkOut)) {
-      setError("Check-out date must be after check-in date.");
+    if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
+      setError("Check-out date/time must be after check-in date/time.");
       return;
     }
 
-    const filteredRooms = rooms.filter((room) => {
-      if (room.status === "MAINTENANCE" || room.status === "OCCUPIED") {
-        return false;
+    try {
+      const response = await fetch(
+        `${API_BASE_URLS.roomSection}/availability?startDate=${encodeURIComponent(
+          formData.checkIn
+        )}&endDate=${encodeURIComponent(formData.checkOut)}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Availability check failed");
       }
 
-      const hasActiveBooking = bookings.some((booking) => {
-        return (
-          booking.status === "ACTIVE" &&
-          booking.room?.id === room.id &&
-          isBookingOverlapping(
-            booking.checkIn,
-            booking.checkOut,
-            checkIn,
-            checkOut
-          )
-        );
-      });
+      const data: AvailabilityRoom[] = await response.json();
 
-      return !hasActiveBooking;
-    });
+      const sortedData = data.sort((a, b) =>
+        a.roomNumber.localeCompare(b.roomNumber, undefined, {
+          numeric: true,
+        })
+      );
 
-    setAvailableRooms(filteredRooms);
-    setAvailabilityChecked(true);
-    setRoomId("");
+      setAvailabilityRooms(sortedData);
+      setAvailabilityChecked(true);
 
-    if (filteredRooms.length === 0) {
-      setError("No rooms are available for the selected date range.");
-    } else {
-      setMessage(`${filteredRooms.length} room(s) available.`);
+      setFormData((previous) => ({
+        ...previous,
+        roomId: "",
+      }));
+
+      const availableCount = sortedData.filter((room) => room.available).length;
+
+      if (availableCount === 0) {
+        setMessage("No rooms available for selected date range.");
+      } else {
+        setMessage(`${availableCount} room(s) available for selected date range.`);
+      }
+    } catch (err) {
+      console.error(err);
+      setError("Availability check failed.");
     }
   };
 
-  const handleCreateBooking = async (event: SyntheticEvent<HTMLFormElement>) => {
+  const handleCreateBooking = async (
+    event: SyntheticEvent<HTMLFormElement>
+  ) => {
     event.preventDefault();
 
-    if (!roomId || !guestName || !nicPassport || !checkIn || !checkOut) {
-      setError("Please fill all required fields.");
+    if (
+      !formData.roomId ||
+      !formData.guestName ||
+      !formData.nicPassport ||
+      !formData.checkIn ||
+      !formData.checkOut
+    ) {
+      setError("Please fill all required booking details.");
       return;
     }
 
@@ -222,42 +249,66 @@ function BookingPage() {
       return;
     }
 
+    const selectedAvailability = availabilityRooms.find(
+      (room) => room.roomId === formData.roomId && room.available
+    );
+
+    if (!selectedAvailability) {
+      setError("Selected room is not available for this date range.");
+      return;
+    }
+
+    if (new Date(formData.checkOut) <= new Date(formData.checkIn)) {
+      setError("Check-out date/time must be after check-in date/time.");
+      return;
+    }
+
+    if (Number(formData.advancePayment || 0) < 0) {
+      setError("Advance payment cannot be negative.");
+      return;
+    }
+
     try {
+      setSaving(true);
+
       const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          roomId,
-          guestName,
-          nicPassport,
-          checkIn,
-          checkOut,
-          advancePayment: Number(advancePayment || 0),
+          roomId: formData.roomId,
+          guestName: formData.guestName,
+          nicPassport: formData.nicPassport,
+          checkIn: formData.checkIn,
+          checkOut: formData.checkOut,
+          advancePayment: Number(formData.advancePayment || 0),
         }),
       });
 
       if (!response.ok) {
-        throw new Error("Booking failed");
+        throw new Error("Booking create failed");
       }
 
-      setRoomId("");
-      setGuestName("");
-      setNicPassport("");
-      setCheckIn("");
-      setCheckOut("");
-      setAdvancePayment("");
-      setAvailableRooms([]);
-      setAvailabilityChecked(false);
+      setFormData({
+        roomId: "",
+        guestName: "",
+        nicPassport: "",
+        checkIn: getTodayDateTime(),
+        checkOut: "",
+        advancePayment: "0",
+      });
 
-      await loadRooms();
-      await loadBookings();
+      resetAvailability();
+
+      await loadData();
 
       setMessage("Booking created successfully.");
     } catch (err) {
       console.error(err);
       setError("Booking failed. Room may already be booked or unavailable.");
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -280,13 +331,50 @@ function BookingPage() {
         throw new Error("Cancel failed");
       }
 
-      await loadBookings();
-      await loadRooms();
+      await loadData();
+      resetAvailability();
 
       setMessage("Booking cancelled successfully.");
     } catch (err) {
       console.error(err);
       setError("Cancel booking failed. Only ACTIVE bookings can be cancelled.");
+    }
+  };
+
+  const handleFullPaymentReceived = async (booking: Booking) => {
+    const balance =
+      Number(booking.totalDue || 0) -
+      Number(booking.advancePayment || 0) -
+      Number(booking.finalPaymentAmount || 0);
+
+    const confirmPayment = window.confirm(
+      `Balance amount is Rs. ${balance.toLocaleString("en-LK", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })}.\n\nDo you want to mark this balance payment as received?`
+    );
+
+    if (!confirmPayment) return;
+
+    try {
+      const response = await fetch(
+        `${API_BASE_URLS.roomSection}/bookings/${booking.id}/full-payment`,
+        {
+          method: "PATCH",
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Full payment update failed");
+      }
+
+      await loadData();
+      resetAvailability();
+
+      setMessage("Full payment received successfully.");
+    } catch (err) {
+      console.error(err);
+      setError("Full payment update failed. Payment may already be completed.");
     }
   };
 
@@ -309,25 +397,14 @@ function BookingPage() {
         throw new Error("Check-out failed");
       }
 
-      await loadBookings();
-      await loadRooms();
+      await loadData();
+      resetAvailability();
 
       setMessage("Booking checked out successfully.");
     } catch (err) {
       console.error(err);
       setError("Check-out failed. Only ACTIVE bookings can be checked out.");
     }
-  };
-
-  const getStatusColor = (status: string): ChipColor => {
-    if (status === "ACTIVE") return "success";
-    if (status === "CANCELLED") return "default";
-    if (status === "CHECKED_OUT") return "primary";
-    return "warning";
-  };
-
-  const calculateBalance = (booking: Booking) => {
-    return Number(booking.totalDue || 0) - Number(booking.advancePayment || 0);
   };
 
   const openInvoiceDialog = (booking: Booking) => {
@@ -338,504 +415,45 @@ function BookingPage() {
     setSelectedInvoiceBooking(null);
   };
 
-  const handlePrintInvoice = () => {
-    if (!selectedInvoiceBooking) return;
-
-    const booking = selectedInvoiceBooking;
-    const balance = calculateBalance(booking);
-
-    const printWindow = window.open("", "_blank");
-
-    if (!printWindow) {
-      setError("Print window blocked. Please allow popups.");
-      return;
-    }
-
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>Room Booking Receipt</title>
-          <style>
-            body {
-              font-family: Arial, sans-serif;
-              padding: 30px;
-              color: #111827;
-            }
-            .receipt {
-              max-width: 700px;
-              margin: auto;
-              border: 1px solid #d1d5db;
-              padding: 25px;
-            }
-            h2, h3 {
-              text-align: center;
-              margin: 5px 0;
-            }
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 20px;
-            }
-            td {
-              padding: 8px;
-              border-bottom: 1px solid #e5e7eb;
-            }
-            .label {
-              font-weight: bold;
-            }
-            .total {
-              font-size: 18px;
-              font-weight: bold;
-            }
-            .footer {
-              margin-top: 30px;
-              text-align: center;
-              font-size: 12px;
-              color: #6b7280;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="receipt">
-            <h2>Hikkaduwa COOP Integrated Management System</h2>
-            <h3>Room Booking Receipt</h3>
-
-            <table>
-              <tr>
-                <td class="label">Room</td>
-                <td>${booking.room?.roomNumber} - ${booking.room?.roomType}</td>
-              </tr>
-              <tr>
-                <td class="label">Guest Name</td>
-                <td>${booking.guestName}</td>
-              </tr>
-              <tr>
-                <td class="label">NIC / Passport</td>
-                <td>${booking.nicPassport}</td>
-              </tr>
-              <tr>
-                <td class="label">Check In</td>
-                <td>${formatDateTime(booking.checkIn)}</td>
-              </tr>
-              <tr>
-                <td class="label">Check Out</td>
-                <td>${formatDateTime(booking.checkOut)}</td>
-              </tr>
-              <tr>
-                <td class="label">Booking Status</td>
-                <td>${booking.status}</td>
-              </tr>
-              <tr>
-                <td class="label">Sub Total</td>
-                <td>Rs. ${formatMoney(booking.subTotal)}</td>
-              </tr>
-              <tr>
-                <td class="label">Tax Amount</td>
-                <td>Rs. ${formatMoney(booking.taxAmount)}</td>
-              </tr>
-              <tr>
-                <td class="label">Total Due</td>
-                <td>Rs. ${formatMoney(booking.totalDue)}</td>
-              </tr>
-              <tr>
-                <td class="label">Advance Payment</td>
-                <td>Rs. ${formatMoney(booking.advancePayment)}</td>
-              </tr>
-              <tr>
-                <td class="label total">Balance Amount</td>
-                <td class="total">Rs. ${formatMoney(balance)}</td>
-              </tr>
-            </table>
-
-            <div class="footer">
-              This is a system-generated receipt.
-            </div>
-          </div>
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.print();
-  };
-
-  const roomsForDropdown = availabilityChecked ? availableRooms : rooms;
-
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom>
         Room Booking
       </Typography>
 
       <Typography color="text.secondary">
-        Create guest bookings, check room availability, cancel bookings,
-        check-out guests, and view invoices.
+        Create guest bookings, check room availability by date range, receive
+        final payments, and print invoices.
       </Typography>
 
-      <Card
-        sx={{
-          mt: 3,
-          maxWidth: 850,
-          mx: "auto",
-          borderRadius: 3,
-        }}
-      >
-        <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
-            Create Booking
-          </Typography>
+      <BookingForm
+        rooms={rooms}
+        availabilityRooms={availabilityRooms}
+        availabilityChecked={availabilityChecked}
+        billingSetting={billingSetting}
+        formData={formData}
+        saving={saving}
+        onFormChange={setFormData}
+        onResetAvailability={resetAvailability}
+        onCheckAvailability={handleCheckAvailability}
+        onSubmit={handleCreateBooking}
+      />
 
-          <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Enter guest details and check room availability before creating a
-            booking.
-          </Typography>
+      <BookingList
+        bookings={bookings}
+        loading={loading}
+        onInvoice={openInvoiceDialog}
+        onCancel={handleCancelBooking}
+        onCheckout={handleCheckoutBooking}
+        onFullPaymentReceived={handleFullPaymentReceived}
+      />
 
-          <Box component="form" onSubmit={handleCreateBooking}>
-            <Box
-              sx={{
-                display: "grid",
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  md: "1fr 1fr",
-                },
-                gap: 2,
-              }}
-            >
-              <TextField
-                label="Guest Name"
-                fullWidth
-                value={guestName}
-                onChange={(e) => setGuestName(e.target.value)}
-                placeholder="Example: Nimal Perera"
-              />
-
-              <TextField
-                label="NIC / Passport"
-                fullWidth
-                value={nicPassport}
-                onChange={(e) => setNicPassport(e.target.value)}
-                placeholder="Example: 991234567V"
-              />
-
-              <TextField
-                label="Check In"
-                type="datetime-local"
-                fullWidth
-                value={checkIn}
-                onChange={(e) => {
-                  setCheckIn(e.target.value);
-                  resetAvailability();
-                }}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                }}
-              />
-
-              <TextField
-                label="Check Out"
-                type="datetime-local"
-                fullWidth
-                value={checkOut}
-                onChange={(e) => {
-                  setCheckOut(e.target.value);
-                  resetAvailability();
-                }}
-                slotProps={{
-                  inputLabel: {
-                    shrink: true,
-                  },
-                }}
-              />
-
-              <Box
-                sx={{
-                  gridColumn: {
-                    xs: "span 1",
-                    md: "span 2",
-                  },
-                  display: "flex",
-                  justifyContent: "flex-end",
-                }}
-              >
-                <Button
-                  type="button"
-                  variant="outlined"
-                  onClick={handleCheckAvailability}
-                  sx={{
-                    color: "#7f1d1d",
-                    borderColor: "#7f1d1d",
-                    "&:hover": {
-                      backgroundColor: "#7f1d1d",
-                      color: "white", 
-                    },
-                  }}
-                >
-                  Check Availability
-                </Button>
-              </Box>
-
-              <TextField
-                select
-                label="Select Available Room"
-                fullWidth
-                value={roomId}
-                onChange={(e) => setRoomId(e.target.value)}
-                disabled={!availabilityChecked}
-                helperText={
-                  availabilityChecked
-                    ? `${availableRooms.length} available room(s) found`
-                    : "Select dates and click Check Availability first"
-                }
-              >
-                {roomsForDropdown.map((room) => (
-                  <MenuItem key={room.id} value={room.id}>
-                    Room {room.roomNumber} - {room.roomType} - Rs.{" "}
-                    {room.basePrice} - {room.status}
-                  </MenuItem>
-                ))}
-              </TextField>
-
-              <TextField
-                label="Advance Payment"
-                type="number"
-                fullWidth
-                value={advancePayment}
-                onChange={(e) => setAdvancePayment(e.target.value)}
-                placeholder="Example: 5000"
-              />
-
-              <Box
-                sx={{
-                  gridColumn: {
-                    xs: "span 1",
-                    md: "span 2",
-                  },
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  mt: 1,
-                }}
-              >
-                <Button type="submit" variant="contained" size="large"
-                sx={{
-                    backgroundColor: "#f97316",
-                    color: "white",
-                    "&:hover": {
-                      backgroundColor: "#ea580c", 
-                    },
-                  }}>
-                  Create Booking
-                </Button>
-              </Box>
-            </Box>
-          </Box>
-        </CardContent>
-      </Card>
-
-      <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h5" gutterBottom>
-          Booking List
-        </Typography>
-
-        <Box sx={{ overflowX: "auto" }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Room</TableCell>
-                <TableCell>Guest</TableCell>
-                <TableCell>NIC / Passport</TableCell>
-                <TableCell>Check In</TableCell>
-                <TableCell>Check Out</TableCell>
-                <TableCell>Total Due</TableCell>
-                <TableCell>Advance</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-
-            <TableBody>
-              {bookings.map((booking) => (
-                <TableRow key={booking.id}>
-                  <TableCell>{booking.room?.roomNumber}</TableCell>
-                  <TableCell>{booking.guestName}</TableCell>
-                  <TableCell>{booking.nicPassport}</TableCell>
-                  <TableCell>{formatDateTime(booking.checkIn)}</TableCell>
-                  <TableCell>{formatDateTime(booking.checkOut)}</TableCell>
-                  <TableCell>Rs. {formatMoney(booking.totalDue)}</TableCell>
-                  <TableCell>Rs. {formatMoney(booking.advancePayment)}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={booking.status}
-                      color={getStatusColor(booking.status)}
-                      size="small"
-                    />
-                  </TableCell>
-
-                  <TableCell>
-                    <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        onClick={() => openInvoiceDialog(booking)}
-                        sx={{
-                          fontWeight: 'bold', // <-- This makes it bold!
-                          color: "#7f1d1d",
-                          borderColor: "#7f1d1d",
-                          "&:hover": {
-                            backgroundColor: "#fef2f2",
-                            borderColor: "#991b1b",
-                          },
-                        }}
-                      >
-                        Invoice
-                      </Button>
-
-                      {booking.status === "ACTIVE" && (
-                        <>
-                          <Button
-                            variant="outlined"
-                            color="error"
-                            size="small"
-                            onClick={() => handleCancelBooking(booking.id)}
-                            sx={{
-                              fontWeight: 'bold',
-                              color: "#f51818",
-                              borderColor: "#7f1d1d",
-                              "&:hover": {
-                                backgroundColor: "#fef2f2",
-                                borderColor: "#991b1b",
-                              },
-                            }}
-                          >
-                            Cancel
-                          </Button>
-
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            size="small"
-                            onClick={() => handleCheckoutBooking(booking.id)}
-                            sx={{
-                              fontWeight: 'bold',
-                              width: "100px",
-                              backgroundColor: "#f97316",
-                              color: "white",
-                              "&:hover": {
-                                backgroundColor: "#ea580c",
-                              },
-                            }}
-                          >
-                            Check-out
-                          </Button>
-                        </>
-                      )}
-                    </Box>
-                  </TableCell>
-                </TableRow>
-              ))}
-
-              {bookings.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={9}>No bookings found</TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </Box>
-      </Paper>
-
-      <Dialog
+      <BookingInvoiceDialog
         open={!!selectedInvoiceBooking}
+        booking={selectedInvoiceBooking}
         onClose={closeInvoiceDialog}
-        fullWidth
-        maxWidth="sm"
-      >
-        <DialogTitle>Booking Invoice / Receipt</DialogTitle>
-
-        <DialogContent>
-          {selectedInvoiceBooking && (
-            <Box sx={{ mt: 1 }}>
-              <Typography variant="h6" gutterBottom>
-                Hikkaduwa Coop - Room Section
-              </Typography>
-
-              <Typography color="text.secondary" gutterBottom>
-                Room Booking Receipt
-              </Typography>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Box sx={{ display: "grid", gap: 1 }}>
-                <Typography>
-                  <strong>Room:</strong>{" "}
-                  {selectedInvoiceBooking.room?.roomNumber} -{" "}
-                  {selectedInvoiceBooking.room?.roomType}
-                </Typography>
-
-                <Typography>
-                  <strong>Guest:</strong> {selectedInvoiceBooking.guestName}
-                </Typography>
-
-                <Typography>
-                  <strong>NIC / Passport:</strong>{" "}
-                  {selectedInvoiceBooking.nicPassport}
-                </Typography>
-
-                <Typography>
-                  <strong>Check In:</strong>{" "}
-                  {formatDateTime(selectedInvoiceBooking.checkIn)}
-                </Typography>
-
-                <Typography>
-                  <strong>Check Out:</strong>{" "}
-                  {formatDateTime(selectedInvoiceBooking.checkOut)}
-                </Typography>
-
-                <Typography>
-                  <strong>Status:</strong> {selectedInvoiceBooking.status}
-                </Typography>
-              </Box>
-
-              <Divider sx={{ my: 2 }} />
-
-              <Box sx={{ display: "grid", gap: 1 }}>
-                <Typography>
-                  <strong>Sub Total:</strong> Rs.{" "}
-                  {formatMoney(selectedInvoiceBooking.subTotal)}
-                </Typography>
-
-                <Typography>
-                  <strong>Tax Amount:</strong> Rs.{" "}
-                  {formatMoney(selectedInvoiceBooking.taxAmount)}
-                </Typography>
-
-                <Typography>
-                  <strong>Total Due:</strong> Rs.{" "}
-                  {formatMoney(selectedInvoiceBooking.totalDue)}
-                </Typography>
-
-                <Typography>
-                  <strong>Advance Payment:</strong> Rs.{" "}
-                  {formatMoney(selectedInvoiceBooking.advancePayment)}
-                </Typography>
-
-                <Typography variant="h6">
-                  Balance Amount: Rs.{" "}
-                  {formatMoney(calculateBalance(selectedInvoiceBooking))}
-                </Typography>
-              </Box>
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions>
-          <Button onClick={closeInvoiceDialog}>Close</Button>
-          <Button variant="contained" onClick={handlePrintInvoice}>
-            Print Receipt
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onError={setError}
+      />
 
       <Snackbar
         open={!!message}

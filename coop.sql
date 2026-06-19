@@ -229,7 +229,14 @@ CREATE TABLE schema_room_section.room (
     room_number VARCHAR(10) UNIQUE NOT NULL,
     room_type VARCHAR(20) NOT NULL, -- AC, NON_AC
     base_price DECIMAL(10, 2) NOT NULL,
+    extra_hour_rate DECIMAL(10, 2) DEFAULT 0.00,
     status VARCHAR(20) NOT NULL DEFAULT 'AVAILABLE' -- AVAILABLE, OCCUPIED, MAINTENANCE
+);
+
+CREATE TABLE schema_room_section.room_billing_setting (
+    id INT PRIMARY KEY,
+    vat_rate DECIMAL(5, 2) NOT NULL DEFAULT 18.00,
+    sscl_rate DECIMAL(5, 2) NOT NULL DEFAULT 2.50
 );
 
 CREATE TABLE schema_room_section.guest_booking (
@@ -239,10 +246,23 @@ CREATE TABLE schema_room_section.guest_booking (
     nic_passport VARCHAR(50) NOT NULL,
     check_in TIMESTAMP NOT NULL,
     check_out TIMESTAMP,
+
+    no_of_days INT DEFAULT 1,
+    extra_hours INT DEFAULT 0,
+    extra_hour_charge DECIMAL(12, 2) DEFAULT 0.00,
+
     advance_payment DECIMAL(10, 2) DEFAULT 0.00,
+
+    final_payment_amount DECIMAL(12, 2) DEFAULT 0.00,
+    final_payment_date TIMESTAMP,
+    payment_status VARCHAR(20) DEFAULT 'PARTIAL', -- PARTIAL, PAID
+
     sub_total DECIMAL(12, 2) NOT NULL,
+    vat_rate DECIMAL(5, 2) DEFAULT 18.00,
+    sscl_rate DECIMAL(5, 2) DEFAULT 2.50,
     tax_amount DECIMAL(10, 2) NOT NULL, -- VAT + SSCL
     total_due DECIMAL(12, 2) NOT NULL,
+
     status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' -- ACTIVE, CHECKED_OUT, CANCELLED
 );
 

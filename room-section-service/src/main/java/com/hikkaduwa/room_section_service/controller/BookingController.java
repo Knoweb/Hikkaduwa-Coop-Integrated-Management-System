@@ -48,4 +48,9 @@ public class BookingController {
     public GuestBooking checkoutBooking(@PathVariable UUID id) {
         return bookingService.checkoutBooking(id);
     }
+
+    @PatchMapping("/bookings/{id}/full-payment")
+    public GuestBooking markFullPaymentReceived(@PathVariable UUID id) {
+        return bookingService.markFullPaymentReceived(id);
+    }
 }

@@ -22,5 +22,8 @@ public class RoomRequest {
     @DecimalMin(value = "0.0", inclusive = false, message = "Base price must be greater than 0")
     private BigDecimal basePrice;
 
+    @DecimalMin(value = "0.0", message = "Extra hour rate cannot be negative")
+    private BigDecimal extraHourRate = BigDecimal.ZERO;
+
     private String status;
 }

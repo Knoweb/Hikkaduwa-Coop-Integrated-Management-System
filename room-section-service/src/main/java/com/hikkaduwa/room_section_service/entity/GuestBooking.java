@@ -36,8 +36,32 @@ public class GuestBooking {
     @Column(name = "check_out")
     private LocalDateTime checkOut;
 
+    @Column(name = "no_of_days")
+    private Integer noOfDays;
+
+    @Column(name = "extra_hours")
+    private Integer extraHours;
+
+    @Column(name = "extra_hour_charge", precision = 12, scale = 2)
+    private BigDecimal extraHourCharge;
+
+    @Column(name = "vat_rate", precision = 5, scale = 2)
+    private BigDecimal vatRate;
+
+    @Column(name = "sscl_rate", precision = 5, scale = 2)
+    private BigDecimal ssclRate;
+
     @Column(name = "advance_payment", precision = 10, scale = 2)
     private BigDecimal advancePayment;
+
+    @Column(name = "final_payment_amount", precision = 12, scale = 2)
+    private BigDecimal finalPaymentAmount;
+
+    @Column(name = "final_payment_date")
+    private LocalDateTime finalPaymentDate;
+
+    @Column(name = "payment_status", length = 20)
+    private String paymentStatus;
 
     @Column(name = "sub_total", nullable = false, precision = 12, scale = 2)
     private BigDecimal subTotal;

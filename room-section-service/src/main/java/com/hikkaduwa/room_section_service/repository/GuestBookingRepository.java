@@ -5,10 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
-import java.math.BigDecimal;
 
 public interface GuestBookingRepository extends JpaRepository<GuestBooking, UUID> {
 
@@ -39,6 +39,27 @@ public interface GuestBookingRepository extends JpaRepository<GuestBooking, UUID
     );
 
     @Query("""
+           SELECT g
+           FROM GuestBooking g
+           WHERE g.status = 'ACTIVE'
+           AND g.checkOut <= :now
+           """)
+    List<GuestBooking> findExpiredActiveBookings(@Param("now") LocalDateTime now);
+
+    @Query("""
+           SELECT g
+           FROM GuestBooking g
+           WHERE g.status = 'ACTIVE'
+           AND g.checkIn <= :now
+           AND g.checkOut > :now
+           """)
+    List<GuestBooking> findCurrentActiveBookings(@Param("now") LocalDateTime now);
+
+    /*
+     * Old invoice total method.
+     * Keep this because another page/dashboard may still use it.
+     */
+    @Query("""
        SELECT COALESCE(SUM(g.totalDue), 0)
        FROM GuestBooking g
        WHERE g.checkIn >= :startDateTime
@@ -46,6 +67,39 @@ public interface GuestBookingRepository extends JpaRepository<GuestBooking, UUID
        AND g.status <> 'CANCELLED'
        """)
     BigDecimal sumInvoiceTotalForDateRange(
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
+    );
+
+    /*
+     * Daily Remittance Part 1:
+     * Advance payments received from bookings created/check-in on that date.
+     */
+    @Query("""
+       SELECT COALESCE(SUM(g.advancePayment), 0)
+       FROM GuestBooking g
+       WHERE g.checkIn >= :startDateTime
+       AND g.checkIn < :endDateTime
+       AND g.status <> 'CANCELLED'
+       """)
+    BigDecimal sumAdvancePaymentsForDateRange(
+            @Param("startDateTime") LocalDateTime startDateTime,
+            @Param("endDateTime") LocalDateTime endDateTime
+    );
+
+    /*
+     * Daily Remittance Part 2:
+     * Final balance payments received on that date.
+     */
+    @Query("""
+       SELECT COALESCE(SUM(g.finalPaymentAmount), 0)
+       FROM GuestBooking g
+       WHERE g.finalPaymentDate >= :startDateTime
+       AND g.finalPaymentDate < :endDateTime
+       AND g.paymentStatus = 'PAID'
+       AND g.status <> 'CANCELLED'
+       """)
+    BigDecimal sumFinalPaymentsForDateRange(
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );

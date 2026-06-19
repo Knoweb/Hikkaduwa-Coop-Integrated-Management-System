@@ -26,9 +26,12 @@ public class RemittanceService {
                     throw new RuntimeException("Remittance already recorded for this date");
                 });
 
-        BigDecimal expectedInvoiceTotal = calculateExpectedInvoiceTotal(
-                request.getRemittanceDate().atStartOfDay(),
-                request.getRemittanceDate().plusDays(1).atStartOfDay()
+        LocalDateTime startOfDay = request.getRemittanceDate().atStartOfDay();
+        LocalDateTime nextDay = request.getRemittanceDate().plusDays(1).atStartOfDay();
+
+        BigDecimal expectedInvoiceTotal = calculateExpectedCashTotal(
+                startOfDay,
+                nextDay
         );
 
         BigDecimal discrepancy = request.getTotalCollected().subtract(expectedInvoiceTotal);
@@ -52,7 +55,7 @@ public class RemittanceService {
                     LocalDateTime startOfDay = remittance.getRemittanceDate().atStartOfDay();
                     LocalDateTime nextDay = remittance.getRemittanceDate().plusDays(1).atStartOfDay();
 
-                    BigDecimal expectedInvoiceTotal = calculateExpectedInvoiceTotal(
+                    BigDecimal expectedInvoiceTotal = calculateExpectedCashTotal(
                             startOfDay,
                             nextDay
                     );
@@ -69,16 +72,29 @@ public class RemittanceService {
                 .toList();
     }
 
-    private BigDecimal calculateExpectedInvoiceTotal(
+    private BigDecimal calculateExpectedCashTotal(
             LocalDateTime startOfDay,
             LocalDateTime nextDay
     ) {
-        BigDecimal total = guestBookingRepository.sumInvoiceTotalForDateRange(
+        BigDecimal advancePayments = guestBookingRepository.sumAdvancePaymentsForDateRange(
                 startOfDay,
                 nextDay
         );
 
-        return total == null ? BigDecimal.ZERO : total;
+        BigDecimal finalPayments = guestBookingRepository.sumFinalPaymentsForDateRange(
+                startOfDay,
+                nextDay
+        );
+
+        if (advancePayments == null) {
+            advancePayments = BigDecimal.ZERO;
+        }
+
+        if (finalPayments == null) {
+            finalPayments = BigDecimal.ZERO;
+        }
+
+        return advancePayments.add(finalPayments);
     }
 
     private RemittanceResponse buildRemittanceResponse(

@@ -33,6 +33,7 @@ type Room = {
   roomNumber: string;
   roomType: string;
   basePrice: number;
+  extraHourRate?: number;
   status: string;
 };
 
@@ -43,6 +44,9 @@ type Booking = {
   checkIn: string;
   checkOut: string;
   advancePayment: number;
+  finalPaymentAmount?: number;
+  finalPaymentDate?: string | null;
+  paymentStatus?: string;
   subTotal: number;
   taxAmount: number;
   totalDue: number;
@@ -81,14 +85,16 @@ const formatDateTime = (dateString: string) => {
 
   const date = new Date(dateString);
 
-  return date.toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  }).replace(",", "");
+  return date
+    .toLocaleString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .replace(",", "");
 };
 
 function RoomDashboardPage() {
@@ -103,6 +109,7 @@ function RoomDashboardPage() {
   const loadDashboardData = async () => {
     try {
       setLoading(true);
+
       const roomsResponse = await fetch(API_BASE_URLS.roomSection);
 
       if (!roomsResponse.ok) {
@@ -131,7 +138,13 @@ function RoomDashboardPage() {
 
       const remittanceData: Remittance[] = await remittanceResponse.json();
 
-      setRooms(roomsData);
+      const sortedRooms = roomsData.sort((a, b) =>
+        a.roomNumber.localeCompare(b.roomNumber, undefined, {
+          numeric: true,
+        })
+      );
+
+      setRooms(sortedRooms);
       setBookings(bookingsData);
       setRemittances(remittanceData);
     } catch (err) {
@@ -176,9 +189,33 @@ function RoomDashboardPage() {
     return formatDateKey(new Date(booking.checkIn)) === todayKey;
   });
 
-  const todayExpectedIncome = todayBookings.reduce((total, booking) => {
-    return total + Number(booking.totalDue || 0);
+  const todayAdvancePayments = bookings.reduce((total, booking) => {
+    const bookingDate = formatDateKey(new Date(booking.checkIn));
+
+    if (bookingDate === todayKey && booking.status !== "CANCELLED") {
+      return total + Number(booking.advancePayment || 0);
+    }
+
+    return total;
   }, 0);
+
+  const todayFinalPayments = bookings.reduce((total, booking) => {
+    if (!booking.finalPaymentDate) return total;
+
+    const finalPaymentDate = formatDateKey(new Date(booking.finalPaymentDate));
+
+    if (
+      finalPaymentDate === todayKey &&
+      booking.paymentStatus === "PAID" &&
+      booking.status !== "CANCELLED"
+    ) {
+      return total + Number(booking.finalPaymentAmount || 0);
+    }
+
+    return total;
+  }, 0);
+
+  const todayExpectedCash = todayAdvancePayments + todayFinalPayments;
 
   const todayRemittance = remittances.find(
     (item) => item.remittanceDate === todayKey
@@ -194,6 +231,11 @@ function RoomDashboardPage() {
     if (status === "ACTIVE") return "success";
     if (status === "CHECKED_OUT") return "primary";
     if (status === "CANCELLED") return "default";
+    return "warning";
+  };
+
+  const getPaymentStatusColor = (status?: string): ChipColor => {
+    if (status === "PAID") return "success";
     return "warning";
   };
 
@@ -218,70 +260,85 @@ function RoomDashboardPage() {
       title: "Total Rooms",
       value: totalRooms,
       helper: "All rooms in the system",
-      borderColor: "#f97316", // Brand Orange
+      borderColor: "#f97316",
     },
     {
       title: "Available Rooms",
       value: availableRooms,
       helper: "Ready for booking",
-      borderColor: "#f97316", // Brand Orange
+      borderColor: "#f97316",
     },
     {
       title: "Occupied Rooms",
       value: occupiedRooms,
       helper: "Currently occupied",
-      borderColor: "#7f1d1d", // Brand Dark Red
+      borderColor: "#7f1d1d",
     },
     {
       title: "Maintenance",
       value: maintenanceRooms,
       helper: "Not available",
-      borderColor: "#9ca3af", // Neutral Grey
+      borderColor: "#9ca3af",
     },
     {
       title: "Active Bookings",
       value: activeBookings,
       helper: "Current active guests",
-      borderColor: "#f97316", // Brand Orange
+      borderColor: "#f97316",
     },
     {
       title: "Today Bookings",
       value: todayBookings.length,
       helper: "Bookings starting today",
-      borderColor: "#f97316", // Brand Orange
+      borderColor: "#f97316",
     },
     {
       title: "Checked-out",
       value: checkedOutBookings,
       helper: "Completed bookings",
-      borderColor: "#7f1d1d", // Brand Dark Red
+      borderColor: "#7f1d1d",
     },
     {
       title: "Cancelled",
       value: cancelledBookings,
       helper: "Cancelled records",
-      borderColor: "#9ca3af", // Neutral Grey
+      borderColor: "#9ca3af",
     },
   ];
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom sx={{ fontWeight: "bold", color: "#111827" }}>
+      <Typography
+        variant="h4"
+        gutterBottom
+        sx={{ fontWeight: "bold", color: "#111827" }}
+      >
         Room Section Dashboard
       </Typography>
 
       <Typography color="text.secondary">
-        Quick overview of rooms, bookings, occupancy, and daily collection.
+        Quick overview of rooms, bookings, payments, occupancy, and daily
+        collection.
       </Typography>
 
       {loading ? (
-        <Box sx={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", height: "50vh" }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+            height: "50vh",
+          }}
+        >
           <CircularProgress sx={{ color: "#f97316" }} />
-          <Typography sx={{ mt: 2, color: "text.secondary" }}>Loading Dashboard Data...</Typography>
+
+          <Typography sx={{ mt: 2, color: "text.secondary" }}>
+            Loading Dashboard Data...
+          </Typography>
         </Box>
       ) : (
         <>
-          {/* 8-Grid Summary Cards */}
           <Box
             sx={{
               display: "grid",
@@ -295,16 +352,21 @@ function RoomDashboardPage() {
             }}
           >
             {summaryCards.map((card) => (
-              <Card 
-                key={card.title} 
-                sx={{ 
+              <Card
+                key={card.title}
+                sx={{
                   borderRadius: 2,
                   borderTop: `4px solid ${card.borderColor}`,
-                  boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)"
+                  boxShadow:
+                    "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
                 }}
               >
                 <CardContent>
-                  <Typography color="text.secondary" gutterBottom sx={{ fontWeight: 500 }}>
+                  <Typography
+                    color="text.secondary"
+                    gutterBottom
+                    sx={{ fontWeight: 500 }}
+                  >
                     {card.title}
                   </Typography>
 
@@ -320,7 +382,6 @@ function RoomDashboardPage() {
             ))}
           </Box>
 
-          {/* Income and Remittance Section */}
           <Box
             sx={{
               display: "grid",
@@ -332,32 +393,46 @@ function RoomDashboardPage() {
               mt: 4,
             }}
           >
-            <Card sx={{ 
-              borderRadius: 2, 
-              backgroundColor: "#fff7ed", // Very light orange
-              border: "1px solid #fed7aa"
-            }}>
+            <Card
+              sx={{
+                borderRadius: 2,
+                backgroundColor: "#fff7ed",
+                border: "1px solid #fed7aa",
+              }}
+            >
               <CardContent>
-                <Typography variant="h6" gutterBottom sx={{ color: "#c2410c", fontWeight: "bold" }}>
-                  Today Expected Income
+                <Typography
+                  variant="h6"
+                  gutterBottom
+                  sx={{ color: "#c2410c", fontWeight: "bold" }}
+                >
+                  Today Expected Cash
                 </Typography>
 
-                <Typography variant="h3" sx={{ fontWeight: "bold", color: "#ea580c", my: 2 }}>
-                  Rs. {formatMoney(todayExpectedIncome)}
+                <Typography
+                  variant="h3"
+                  sx={{ fontWeight: "bold", color: "#ea580c", my: 2 }}
+                >
+                  Rs. {formatMoney(todayExpectedCash)}
                 </Typography>
 
                 <Typography color="text.secondary">
-                  Based on bookings starting today.
+                  Advance today: Rs. {formatMoney(todayAdvancePayments)} +
+                  Final payments today: Rs. {formatMoney(todayFinalPayments)}
                 </Typography>
               </CardContent>
             </Card>
 
-            <Card sx={{ 
-              borderRadius: 2,
-              backgroundColor: todayRemittance 
-                ? (Number(todayRemittance.discrepancy) < 0 ? "#fef2f2" : "#f0fdf4") // Light red if short, light green if good
-                : "#f3f4f6" // Grey if not recorded
-            }}>
+            <Card
+              sx={{
+                borderRadius: 2,
+                backgroundColor: todayRemittance
+                  ? Number(todayRemittance.discrepancy) < 0
+                    ? "#fef2f2"
+                    : "#f0fdf4"
+                  : "#f3f4f6",
+              }}
+            >
               <CardContent>
                 <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
                   Today Remittance Status
@@ -369,14 +444,29 @@ function RoomDashboardPage() {
                       Rs. {formatMoney(todayRemittance.totalCollected)}
                     </Typography>
 
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        mt: 2,
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <Typography color="text.secondary">
-                        Difference: <strong>Rs. {formatMoney(todayRemittance.discrepancy)}</strong>
+                        Difference:{" "}
+                        <strong>
+                          Rs. {formatMoney(todayRemittance.discrepancy)}
+                        </strong>
                       </Typography>
 
                       <Chip
-                        label={getRemittanceStatusLabel(todayRemittance.discrepancy)}
-                        color={getRemittanceStatusColor(todayRemittance.discrepancy)}
+                        label={getRemittanceStatusLabel(
+                          todayRemittance.discrepancy
+                        )}
+                        color={getRemittanceStatusColor(
+                          todayRemittance.discrepancy
+                        )}
                         size="small"
                         sx={{ fontWeight: "bold" }}
                       />
@@ -384,7 +474,10 @@ function RoomDashboardPage() {
                   </Box>
                 ) : (
                   <Box sx={{ mt: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: "bold", color: "#9ca3af", mb: 1 }}>
+                    <Typography
+                      variant="h4"
+                      sx={{ fontWeight: "bold", color: "#9ca3af", mb: 1 }}
+                    >
                       Not Recorded
                     </Typography>
 
@@ -397,14 +490,23 @@ function RoomDashboardPage() {
             </Card>
           </Box>
 
-          {/* Recent Bookings Table */}
-          <Paper sx={{ mt: 4, p: 3, borderRadius: 2, boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)" }}>
+          <Paper
+            sx={{
+              mt: 4,
+              p: 3,
+              borderRadius: 2,
+              boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
+              width: "100%",
+              maxWidth: "100%",
+              overflow: "hidden",
+            }}
+          >
             <Typography variant="h6" gutterBottom sx={{ fontWeight: "bold" }}>
               Recent Bookings
             </Typography>
 
             <Box sx={{ overflowX: "auto", mt: 2 }}>
-              <Table>
+              <Table sx={{ minWidth: 950 }}>
                 <TableHead sx={{ backgroundColor: "#f9fafb" }}>
                   <TableRow>
                     <TableCell sx={{ fontWeight: "bold" }}>Room</TableCell>
@@ -412,6 +514,7 @@ function RoomDashboardPage() {
                     <TableCell sx={{ fontWeight: "bold" }}>Check In</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Check Out</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Total Due</TableCell>
+                    <TableCell sx={{ fontWeight: "bold" }}>Payment</TableCell>
                     <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
                   </TableRow>
                 </TableHead>
@@ -420,10 +523,26 @@ function RoomDashboardPage() {
                   {recentBookings.map((booking) => (
                     <TableRow key={booking.id} hover>
                       <TableCell>{booking.room?.roomNumber}</TableCell>
+
                       <TableCell>{booking.guestName}</TableCell>
+
                       <TableCell>{formatDateTime(booking.checkIn)}</TableCell>
+
                       <TableCell>{formatDateTime(booking.checkOut)}</TableCell>
-                      <TableCell sx={{ fontWeight: 500 }}>Rs. {formatMoney(booking.totalDue)}</TableCell>
+
+                      <TableCell sx={{ fontWeight: 500 }}>
+                        Rs. {formatMoney(booking.totalDue)}
+                      </TableCell>
+
+                      <TableCell>
+                        <Chip
+                          label={booking.paymentStatus || "PARTIAL"}
+                          color={getPaymentStatusColor(booking.paymentStatus)}
+                          size="small"
+                          sx={{ fontWeight: "bold" }}
+                        />
+                      </TableCell>
+
                       <TableCell>
                         <Chip
                           label={booking.status}
@@ -437,7 +556,11 @@ function RoomDashboardPage() {
 
                   {recentBookings.length === 0 && (
                     <TableRow>
-                      <TableCell colSpan={6} align="center" sx={{ py: 3, color: "text.secondary" }}>
+                      <TableCell
+                        colSpan={7}
+                        align="center"
+                        sx={{ py: 3, color: "text.secondary" }}
+                      >
                         No recent bookings found
                       </TableCell>
                     </TableRow>

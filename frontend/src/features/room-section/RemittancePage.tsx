@@ -50,10 +50,19 @@ const formatMoney = (value: MoneyValue) => {
   });
 };
 
+const getCurrentMonthValue = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+
+  return `${year}-${month}`;
+};
+
 function RemittancePage() {
   const [remittances, setRemittances] = useState<Remittance[]>([]);
   const [remittanceDate, setRemittanceDate] = useState("");
   const [totalCollected, setTotalCollected] = useState("");
+  const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
 
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -86,6 +95,12 @@ function RemittancePage() {
     loadRemittances();
   }, []);
 
+  const filteredRemittances = remittances.filter((item) => {
+    if (!selectedMonth) return true;
+
+    return item.remittanceDate.startsWith(selectedMonth);
+  });
+
   const handleCreateRemittance = async (
     event: SyntheticEvent<HTMLFormElement>
   ) => {
@@ -93,6 +108,11 @@ function RemittancePage() {
 
     if (!remittanceDate || !totalCollected) {
       setError("Please enter remittance date and total collected amount.");
+      return;
+    }
+
+    if (Number(totalCollected) < 0) {
+      setError("Total collected amount cannot be negative.");
       return;
     }
 
@@ -157,13 +177,13 @@ function RemittancePage() {
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom>
         Daily Remittance
       </Typography>
 
       <Typography color="text.secondary">
-        Record daily room collections and compare actual collection with system
-        invoice total.
+        Record daily room cash collections and compare the actual collected
+        amount with the system expected cash total.
       </Typography>
 
       <Card
@@ -175,13 +195,14 @@ function RemittancePage() {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }} gutterBottom>
             Add Daily Remittance
           </Typography>
 
           <Typography color="text.secondary" sx={{ mb: 2 }}>
-            Select the date and enter the actual amount collected by the room
-            section.
+            Select the date and enter the actual cash amount collected by the
+            room section. The system expected amount is calculated using advance
+            payments and final payments received on that date.
           </Typography>
 
           <Box component="form" onSubmit={handleCreateRemittance}>
@@ -209,7 +230,7 @@ function RemittancePage() {
               />
 
               <TextField
-                label="Total Collected Amount"
+                label="Actual Total Collected"
                 type="number"
                 fullWidth
                 value={totalCollected}
@@ -227,7 +248,18 @@ function RemittancePage() {
                   justifyContent: "flex-end",
                 }}
               >
-                <Button type="submit" variant="contained" size="large">
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  sx={{
+                    backgroundColor: "#f97316",
+                    color: "white",
+                    "&:hover": {
+                      backgroundColor: "#ea580c",
+                    },
+                  }}
+                >
                   Save Remittance
                 </Button>
               </Box>
@@ -236,29 +268,73 @@ function RemittancePage() {
         </CardContent>
       </Card>
 
-      <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h5" gutterBottom>
+      <Paper
+        sx={{
+          mt: 3,
+          p: 2,
+          width: "100%",
+          maxWidth: "100%",
+          overflow: "hidden",
+        }}
+      >
+        <Typography variant="h5" sx={{ fontWeight: "bold" }} gutterBottom>
           Remittance History
         </Typography>
 
-        <Box sx={{ overflowX: "auto" }}>
-          <Table>
-            <TableHead>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            gap: 2,
+            mb: 2,
+            flexWrap: "wrap",
+          }}
+        >
+          <Typography color="text.secondary">
+            Showing records for selected month.
+          </Typography>
+
+          <TextField
+            label="Filter by Month"
+            type="month"
+            size="small"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(e.target.value)}
+            slotProps={{
+              inputLabel: {
+                shrink: true,
+              },
+            }}
+          />
+        </Box>
+
+        <Box sx={{ width: "100%", overflowX: "auto" }}>
+          <Table sx={{ minWidth: 850 }}>
+            <TableHead
+              sx={{
+                backgroundColor: "#f3f4f6",
+                borderBottom: "2px solid #e5e7eb",
+              }}
+            >
               <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Expected Invoice Total</TableCell>
-                <TableCell>Total Collected</TableCell>
-                <TableCell>Difference</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Message</TableCell>
-                <TableCell>Receptionist ID</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Date</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>
+                  Expected Cash Total
+                </TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>
+                  Actual Total Collected
+                </TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Difference</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Status</TableCell>
+                <TableCell sx={{ fontWeight: "bold" }}>Message</TableCell>
               </TableRow>
             </TableHead>
 
             <TableBody>
-              {remittances.map((item) => (
+              {filteredRemittances.map((item) => (
                 <TableRow key={item.id || item.remittanceId}>
-                  <TableCell>{item.remittanceDate}</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>{item.remittanceDate}</TableCell>
 
                   <TableCell>
                     Rs. {formatMoney(item.expectedInvoiceTotal)}
@@ -285,18 +361,19 @@ function RemittancePage() {
                       label={getDiscrepancyLabel(item.discrepancy)}
                       color={getDiscrepancyColor(item.discrepancy)}
                       size="small"
+                      sx={{ fontWeight: "bold" }}
                     />
                   </TableCell>
 
                   <TableCell>{item.message}</TableCell>
-
-                  <TableCell>{item.receptionistId}</TableCell>
                 </TableRow>
               ))}
 
-              {remittances.length === 0 && (
+              {filteredRemittances.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={7}>No remittance records found</TableCell>
+                  <TableCell colSpan={6} align="center">
+                    No remittance records found for selected month
+                  </TableCell>
                 </TableRow>
               )}
             </TableBody>

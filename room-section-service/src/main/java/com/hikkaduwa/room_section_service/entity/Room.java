@@ -23,11 +23,14 @@ public class Room {
     private String roomNumber;
 
     @Column(name = "room_type", nullable = false, length = 20)
-    private String roomType; // AC, NON_AC
+    private String roomType;
 
     @Column(name = "base_price", nullable = false, precision = 10, scale = 2)
     private BigDecimal basePrice;
 
+    @Column(name = "extra_hour_rate", precision = 10, scale = 2)
+    private BigDecimal extraHourRate;
+
     @Column(nullable = false, length = 20)
-    private String status; // AVAILABLE, OCCUPIED, MAINTENANCE
+    private String status;
 }

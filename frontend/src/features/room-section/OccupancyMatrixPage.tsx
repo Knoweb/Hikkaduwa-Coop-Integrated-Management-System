@@ -18,6 +18,7 @@ type Room = {
   roomNumber: string;
   roomType: string;
   basePrice: number;
+  extraHourRate?: number;
   status: string;
 };
 
@@ -27,6 +28,12 @@ type Booking = {
   nicPassport: string;
   checkIn: string;
   checkOut: string;
+  noOfDays?: number;
+  extraHours?: number;
+  totalDue?: number;
+  advancePayment?: number;
+  finalPaymentAmount?: number;
+  paymentStatus?: string;
   status: string;
   room: Room;
 };
@@ -36,19 +43,21 @@ type DayCell = {
   isCurrentMonth: boolean;
 };
 
-// --- ADDED FORMATTING HELPER HERE ---
 const formatCustomDateTime = (dateString: string) => {
   if (!dateString) return "-";
+
   const date = new Date(dateString);
-  
-  return date.toLocaleString("en-US", {
-    month: "2-digit",
-    day: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: true,
-  }).replace(",", ""); // Removes the default comma between date and time
+
+  return date
+    .toLocaleString("en-US", {
+      month: "2-digit",
+      day: "2-digit",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: true,
+    })
+    .replace(",", "");
 };
 
 function OccupancyMatrixPage() {
@@ -66,7 +75,7 @@ function OccupancyMatrixPage() {
         throw new Error("Failed to load rooms");
       }
 
-      const roomsData = await roomsResponse.json();
+      const roomsData: Room[] = await roomsResponse.json();
 
       const bookingsResponse = await fetch(
         `${API_BASE_URLS.roomSection}/bookings`
@@ -76,10 +85,21 @@ function OccupancyMatrixPage() {
         throw new Error("Failed to load bookings");
       }
 
-      const bookingsData = await bookingsResponse.json();
+      const bookingsData: Booking[] = await bookingsResponse.json();
 
-      setRooms(roomsData);
-      setBookings(bookingsData);
+      const sortedRooms = roomsData.sort((a, b) =>
+        a.roomNumber.localeCompare(b.roomNumber, undefined, {
+          numeric: true,
+        })
+      );
+
+      const sortedBookings = bookingsData.sort(
+        (a, b) =>
+          new Date(a.checkIn).getTime() - new Date(b.checkIn).getTime()
+      );
+
+      setRooms(sortedRooms);
+      setBookings(sortedBookings);
     } catch (err) {
       console.error(err);
       setError("Failed to load data. Check room-section-service on port 8084.");
@@ -125,6 +145,7 @@ function OccupancyMatrixPage() {
 
     for (let i = startDay; i > 0; i--) {
       const date = new Date(year, month, 1 - i);
+
       days.push({
         date,
         isCurrentMonth: false,
@@ -133,6 +154,7 @@ function OccupancyMatrixPage() {
 
     for (let day = 1; day <= totalDaysInMonth; day++) {
       const date = new Date(year, month, day);
+
       days.push({
         date,
         isCurrentMonth: true,
@@ -141,6 +163,7 @@ function OccupancyMatrixPage() {
 
     while (days.length % 7 !== 0) {
       const nextDate = new Date(year, month, days.length - startDay + 1);
+
       days.push({
         date: nextDate,
         isCurrentMonth: false,
@@ -151,6 +174,8 @@ function OccupancyMatrixPage() {
   }, [currentMonth]);
 
   const isBookingOnDate = (booking: Booking, date: Date) => {
+    if (!booking.checkIn || !booking.checkOut) return false;
+
     const dayStart = new Date(date);
     dayStart.setHours(0, 0, 0, 0);
 
@@ -160,17 +185,31 @@ function OccupancyMatrixPage() {
     const bookingStart = new Date(booking.checkIn);
     const bookingEnd = new Date(booking.checkOut);
 
-    return bookingStart <= dayEnd && bookingEnd >= dayStart;
+    return bookingStart < dayEnd && bookingEnd > dayStart;
+  };
+
+  const isBookingCurrentlyOccupied = (booking: Booking) => {
+    const now = new Date();
+    const checkIn = new Date(booking.checkIn);
+    const checkOut = new Date(booking.checkOut);
+
+    return booking.status === "ACTIVE" && checkIn <= now && checkOut > now;
   };
 
   const getBookingsForDate = (date: Date) => {
-    return bookings.filter((booking) => {
-      return (
-        booking.status === "ACTIVE" &&
-        booking.room &&
-        isBookingOnDate(booking, date)
+    return bookings
+      .filter((booking) => {
+        return (
+          booking.status === "ACTIVE" &&
+          booking.room &&
+          isBookingOnDate(booking, date)
+        );
+      })
+      .sort((a, b) =>
+        a.room.roomNumber.localeCompare(b.room.roomNumber, undefined, {
+          numeric: true,
+        })
       );
-    });
   };
 
   const getDaySummary = (date: Date) => {
@@ -185,7 +224,7 @@ function OccupancyMatrixPage() {
         return;
       }
 
-      const hasBooking = bookings.some((booking) => {
+      const bookingForRoom = bookings.find((booking) => {
         return (
           booking.status === "ACTIVE" &&
           booking.room?.id === room.id &&
@@ -193,9 +232,12 @@ function OccupancyMatrixPage() {
         );
       });
 
-      if (!hasBooking) {
+      if (!bookingForRoom) {
         available++;
-      } else if (isToday(date) || room.status === "OCCUPIED") {
+        return;
+      }
+
+      if (isToday(date) && isBookingCurrentlyOccupied(bookingForRoom)) {
         occupied++;
       } else {
         booked++;
@@ -232,7 +274,6 @@ function OccupancyMatrixPage() {
 
   return (
     <Box>
-      {/* Header */}
       <Box
         sx={{
           mb: 2,
@@ -240,15 +281,16 @@ function OccupancyMatrixPage() {
           justifyContent: "space-between",
           alignItems: "center",
           gap: 2,
+          flexWrap: "wrap",
         }}
       >
         <Box>
-          <Typography variant="h4" gutterBottom>
+          <Typography variant="h4" sx={{ fontWeight: "bold" }} gutterBottom>
             Room Occupancy Calendar
           </Typography>
 
           <Typography color="text.secondary">
-            Monthly view of room bookings and availability.
+            Monthly view of room bookings, occupancy, and availability.
           </Typography>
         </Box>
 
@@ -257,14 +299,18 @@ function OccupancyMatrixPage() {
             Previous
           </Button>
 
-          <Button variant="contained" size="small" onClick={goToToday}
-          sx={{
-                backgroundColor: "#f97316",
-                color: "white",
-                "&:hover": {
-                backgroundColor: "#ea580c", 
-                },
-              }}>
+          <Button
+            variant="contained"
+            size="small"
+            onClick={goToToday}
+            sx={{
+              backgroundColor: "#f97316",
+              color: "white",
+              "&:hover": {
+                backgroundColor: "#ea580c",
+              },
+            }}
+          >
             Today
           </Button>
 
@@ -274,30 +320,31 @@ function OccupancyMatrixPage() {
         </Box>
       </Box>
 
-      {/* Top Summary */}
       <Paper sx={{ p: 1.5, mb: 2 }}>
         <Box
           sx={{
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
+            gap: 2,
+            flexWrap: "wrap",
           }}
         >
           <Typography variant="h5">{monthLabel}</Typography>
 
-          <Box sx={{ display: "flex", gap: 1 }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
             <Chip label="A - Available" color="success" size="small" />
             <Chip label="B - Booked" color="primary" size="small" />
-            <Chip label="O - Occupied" color="error" size="small" />
+            <Chip label="O - Occupied Today" color="error" size="small" />
             <Chip label="M - Maintenance" color="default" size="small" />
           </Box>
         </Box>
       </Paper>
 
-      {/* Calendar */}
-      <Paper sx={{ p: 1.5 }}>
+      <Paper sx={{ p: 1.5, overflowX: "auto" }}>
         <Box
           sx={{
+            minWidth: 850,
             display: "grid",
             gridTemplateColumns: "repeat(7, 1fr)",
             gap: 1,
@@ -330,10 +377,10 @@ function OccupancyMatrixPage() {
                 key={formatDateKey(dayCell.date)}
                 onClick={() => setSelectedDate(dayCell.date)}
                 sx={{
-                  height: 105,
+                  height: 112,
                   cursor: "pointer",
                   border: selected
-                    ? "2px solid #1976d2"
+                    ? "2px solid #f97316"
                     : "1px solid #e5e7eb",
                   backgroundColor: dayCell.isCurrentMonth ? "white" : "#f3f4f6",
                   opacity: dayCell.isCurrentMonth ? 1 : 0.45,
@@ -356,14 +403,22 @@ function OccupancyMatrixPage() {
                       sx={{
                         fontWeight: "bold",
                         fontSize: 15,
-                        color: isToday(dayCell.date) ? "#1976d2" : "inherit",
+                        color: isToday(dayCell.date) ? "#f97316" : "inherit",
                       }}
                     >
                       {dayCell.date.getDate()}
                     </Typography>
 
                     {isToday(dayCell.date) && (
-                      <Chip label="Today" color="primary" size="small" />
+                      <Chip
+                        label="Today"
+                        size="small"
+                        sx={{
+                          backgroundColor: "#f97316",
+                          color: "white",
+                          fontWeight: "bold",
+                        }}
+                      />
                     )}
                   </Box>
 
@@ -443,9 +498,10 @@ function OccupancyMatrixPage() {
         </Box>
       </Paper>
 
-      {/* Selected Date Details */}
       <Paper sx={{ p: 2, mt: 2 }}>
-        <Typography variant="h6">Selected Date Details</Typography>
+        <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+          Selected Date Details
+        </Typography>
 
         <Typography color="text.secondary" sx={{ mb: 1 }}>
           {selectedDate.toLocaleDateString("en-GB", {
@@ -460,7 +516,7 @@ function OccupancyMatrixPage() {
 
         {selectedDateBookings.length === 0 ? (
           <Typography color="text.secondary">
-            No bookings for this date.
+            No active bookings for this date.
           </Typography>
         ) : (
           <Box sx={{ display: "grid", gap: 1 }}>
@@ -470,9 +526,11 @@ function OccupancyMatrixPage() {
                 variant="outlined"
                 sx={{
                   p: 1.5,
-                  borderLeft: isToday(selectedDate)
-                    ? "5px solid #d32f2f"
-                    : "5px solid #1976d2",
+                  borderLeft:
+                    isToday(selectedDate) &&
+                    isBookingCurrentlyOccupied(booking)
+                      ? "5px solid #d32f2f"
+                      : "5px solid #1976d2",
                 }}
               >
                 <Box
@@ -480,6 +538,7 @@ function OccupancyMatrixPage() {
                     display: "flex",
                     justifyContent: "space-between",
                     gap: 2,
+                    flexWrap: "wrap",
                   }}
                 >
                   <Box>
@@ -494,16 +553,23 @@ function OccupancyMatrixPage() {
                     <Typography color="text.secondary">
                       NIC/Passport: {booking.nicPassport}
                     </Typography>
+
+                    <Typography color="text.secondary">
+                      Booking Status: {booking.status}
+                    </Typography>
                   </Box>
 
                   <Box>
-                    {/* APPLIED THE HELPER FUNCTION HERE */}
                     <Typography color="text.secondary">
                       Check In: {formatCustomDateTime(booking.checkIn)}
                     </Typography>
 
                     <Typography color="text.secondary">
                       Check Out: {formatCustomDateTime(booking.checkOut)}
+                    </Typography>
+
+                    <Typography color="text.secondary">
+                      Payment: {booking.paymentStatus || "PARTIAL"}
                     </Typography>
                   </Box>
                 </Box>
@@ -513,7 +579,11 @@ function OccupancyMatrixPage() {
         )}
       </Paper>
 
-      <Snackbar open={!!error} autoHideDuration={4000} onClose={() => setError("")}>
+      <Snackbar
+        open={!!error}
+        autoHideDuration={4000}
+        onClose={() => setError("")}
+      >
         <Alert severity="error" onClose={() => setError("")}>
           {error}
         </Alert>
