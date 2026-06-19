@@ -30,13 +30,12 @@ public class BeerItemController {
     }
 
     @PutMapping("/{id}/price")
-    @Transactional // Ensures the catalog update AND the history log happen together safely
+    @Transactional
     public ResponseEntity<BeerItem> updatePrice(
             @PathVariable UUID id,
             @RequestBody Map<String, BigDecimal> payload,
             @RequestHeader(value = "X-User-Role", defaultValue = "ROLE_USER") String userRole) {
 
-        // SECURITY: Reject anyone who is not an Admin
         if (!"ROLE_ADMIN".equals(userRole)) {
             throw new RuntimeException("Unauthorized: Only Admins can authorize price changes.");
         }
@@ -46,19 +45,16 @@ public class BeerItemController {
 
         BigDecimal newPrice = payload.get("newPrice");
 
-        // 1. Audit Trail: Log the new price with an effective date
         BeerPriceList history = new BeerPriceList();
         history.setBeerItemId(item.getId());
-        history.setUnitPrice(newPrice); // <-- මෙතන හරියටම setUnitPrice කියලා තියෙනවා
+        history.setUnitPrice(newPrice);
         history.setAuthorizedBy(userRole);
         priceHistoryRepository.save(history);
 
-        // 2. Active Catalog: Update the master price
         item.setUnitPrice(newPrice);
         return ResponseEntity.ok(beerItemRepository.save(item));
     }
 
-    // Auto-generation logic for new items
     @PostMapping
     public ResponseEntity<BeerItem> addBeerItem(@RequestBody BeerItem newItem) {
         if (newItem.getItemCode() == null || newItem.getItemCode().isEmpty()) {

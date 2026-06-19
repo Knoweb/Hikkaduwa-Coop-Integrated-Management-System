@@ -29,7 +29,6 @@ public class SupplierController {
         supplier.setTerritory(request.getTerritory());
         supplier.setContactDetails(request.getContactDetails());
         supplier.setCreditTerms(request.getCreditTerms());
-        // outstandingBalance defaults to 0.00 via the Entity
 
         return ResponseEntity.ok(supplierRepository.save(supplier));
     }

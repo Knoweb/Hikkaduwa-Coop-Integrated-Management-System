@@ -12,18 +12,20 @@ interface BeerItem {
     currentStock: number;
 }
 
-const BeerIssuance: React.FC = () => {
+const LiquorIssuance: React.FC = () => {
     const [catalog, setCatalog] = useState<BeerItem[]>([]);
-    const [operatorName, setOperatorName] = useState('Mr. P.K.B.H.M. Bandara');
-    const [globalCommission, setGlobalCommission] = useState<number>(50); // Default Rs. 50
+    
+    const [operatorName, setOperatorName] = useState('');
+    const [globalCommission, setGlobalCommission] = useState<number | string>(''); 
+    
     const [items, setItems] = useState([{ beerItemId: '', quantity: '', unitPrice: 0 }]);
     const [invoiceGenerated, setInvoiceGenerated] = useState<any>(null);
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
         const fetchCatalog = async () => {
             try {
                 const res = await api.get('/api/v1/beer-garden/items');
-                // Only show items that actually have stock
                 setCatalog(res.data.filter((b: BeerItem) => b.currentStock > 0));
             } catch (error) {
                 console.error("Failed to fetch catalog", error);
@@ -51,35 +53,43 @@ const BeerIssuance: React.FC = () => {
     const calculateTotals = () => {
         let stockVal = 0;
         let commVal = 0;
+        const safeCommission = Number(globalCommission) || 0; 
+
         items.forEach(item => {
             const qty = Number(item.quantity) || 0;
             stockVal += qty * item.unitPrice;
-            commVal += qty * globalCommission;
+            commVal += qty * safeCommission;
         });
         return { stockVal, commVal, grandTotal: stockVal + commVal };
     };
 
     const handleIssue = async () => {
-        if (!operatorName || items.some(i => !i.beerItemId || !i.quantity)) {
-            return alert("Fill all fields correctly.");
+        if (!operatorName.trim() || globalCommission === '' || items.some(i => !i.beerItemId || !i.quantity)) {
+            return alert("Please fill all fields correctly, including Operator Name and Commission.");
         }
         
+        setIsSubmitting(true);
+        
         try {
+            const safeCommission = Number(globalCommission) || 0;
             const payload = {
-                operatorName,
+                restaurantOperatorName: operatorName, 
+                totalLiquorValue: stockVal,           
+                commissionPerUnit: safeCommission,  
                 items: items.map(i => ({
                     beerItemId: i.beerItemId,
-                    quantity: Number(i.quantity),
-                    commissionPerBottle: globalCommission
+                    quantity: Number(i.quantity)
                 }))
             };
             
             const userRole = localStorage.getItem('user_role');
-            const res = await api.post('/api/v1/beer-garden/issuance', payload, { headers: { 'X-User-Role': userRole } });
+            const res = await api.post('/api/v1/beer-garden/issuances', payload, { headers: { 'X-User-Role': userRole } });
             setInvoiceGenerated(res.data);
             alert("Issuance Successful! Ready to print.");
         } catch (error: any) {
             alert("Failed to issue stock. Check console. " + (error.response?.data || ''));
+        } finally {
+            setIsSubmitting(false);
         }
     };
 
@@ -88,17 +98,29 @@ const BeerIssuance: React.FC = () => {
     return (
         <Box sx={{ p: 3, maxWidth: 1000, mx: 'auto' }}>
             
-            {/* --- NO PRINT AREA: THE FORM --- */}
             <Box className="no-print">
                 <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Restaurant Issuance</Typography>
                 
                 <Paper sx={{ p: 3, mb: 3 }}>
                     <Grid container spacing={3}>
                         <Grid size={{ xs: 8 }}>
-                            <TextField fullWidth label="Restaurant Operator Name" value={operatorName} onChange={(e) => setOperatorName(e.target.value)} />
+                            <TextField 
+                                fullWidth 
+                                label="Restaurant Operator Name" 
+                                value={operatorName} 
+                                onChange={(e) => setOperatorName(e.target.value)} 
+                                placeholder="Enter operator name" 
+                            />
                         </Grid>
                         <Grid size={{ xs: 4 }}>
-                            <TextField fullWidth type="number" label="Commission per Bottle (Rs.)" value={globalCommission} onChange={(e) => setGlobalCommission(Number(e.target.value))} />
+                            <TextField 
+                                fullWidth 
+                                type="number" 
+                                label="Commission per Bottle (Rs.)" 
+                                value={globalCommission} 
+                                onChange={(e) => setGlobalCommission(e.target.value)} 
+                                placeholder="e.g. 50"
+                            />
                         </Grid>
                     </Grid>
                 </Paper>
@@ -119,7 +141,7 @@ const BeerIssuance: React.FC = () => {
                             </Grid>
                             <Grid size={{ xs: 3 }}>
                                 <Typography variant="body2">Price: Rs. {item.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</Typography>
-                                <Typography variant="caption" color="textSecondary">+ Rs.{globalCommission} Comm.</Typography>
+                                <Typography variant="caption" color="textSecondary">+ Rs.{Number(globalCommission) || 0} Comm.</Typography>
                             </Grid>
                             <Grid size={{ xs: 1 }}>
                                 <IconButton color="error" onClick={() => removeItemRow(index)}><DeleteIcon /></IconButton>
@@ -141,15 +163,19 @@ const BeerIssuance: React.FC = () => {
                                 Print Invoice
                             </Button>
                         ) : (
-                            <Button variant="contained" color="success" size="large" onClick={handleIssue}>
-                                Confirm & Generate Invoice
+                            <Button 
+                                variant="contained" 
+                                color="success" 
+                                size="large" 
+                                onClick={handleIssue}
+                                disabled={isSubmitting} 
+                            >
+                                {isSubmitting ? 'Processing...' : 'Confirm & Generate Invoice'}
                             </Button>
                         )}
                     </Box>
                 </Box>
             </Box>
-
-            {/* --- PRINT ONLY AREA: THE INVOICE --- */}
             {invoiceGenerated && (
                 <Box className="print-only" sx={{ display: 'none' }}>
                     <Typography variant="h4" align="center" sx={{ fontWeight: 'bold' }}>HIKKADUWA CO-OP BEER GARDEN</Typography>
@@ -171,7 +197,6 @@ const BeerIssuance: React.FC = () => {
                             </tr>
                         </thead>
                         <tbody>
-                            {/* We just show a summary line for the items here based on user inputs for simplicity on print */}
                             {items.map((it, idx) => {
                                 const b = catalog.find(x => x.id === it.beerItemId);
                                 return (
@@ -179,7 +204,7 @@ const BeerIssuance: React.FC = () => {
                                         <td style={{ padding: '8px 0' }}>{b?.beerName}</td>
                                         <td>{it.quantity}</td>
                                         <td>{it.unitPrice.toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
-                                        <td>{(Number(it.quantity) * globalCommission).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
+                                        <td>{(Number(it.quantity) * (Number(globalCommission) || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}</td>
                                     </tr>
                                 );
                             })}
@@ -224,4 +249,4 @@ const BeerIssuance: React.FC = () => {
     );
 };
 
-export default BeerIssuance;
+export default LiquorIssuance;

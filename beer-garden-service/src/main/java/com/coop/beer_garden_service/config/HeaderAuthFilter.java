@@ -20,11 +20,9 @@ public class HeaderAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
 
-        // Gateway eken ewana Header eka read karanawa
         String userRole = request.getHeader("X-User-Role");
 
         if (userRole != null && !userRole.isEmpty()) {
-            // Spring Security ekata Admin da kiyala kiyanawa
             SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + userRole.toUpperCase());
             UsernamePasswordAuthenticationToken authentication =
                     new UsernamePasswordAuthenticationToken(null, null, Collections.singletonList(authority));

@@ -1,8 +1,9 @@
 package com.coop.beer_garden_service.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Data;
+import lombok.ToString;
 import java.math.BigDecimal;
 import java.util.UUID;
 
@@ -16,11 +17,12 @@ public class GrnItem {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "grn_invoice_id", nullable = false)
-    @JsonIgnore
-    private GrnInvoice grnInvoice;
+    @JsonBackReference
+    @ToString.Exclude
+    private BeerGardenGrn grnInvoice;
 
     @Column(nullable = false)
-    private UUID beerItemId; // <-- NO MORE STRINGS! Strict ID linking.
+    private UUID beerItemId;
 
     @Column(nullable = false)
     private Integer quantity;

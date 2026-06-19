@@ -211,12 +211,12 @@ CREATE TABLE schema_beer_garden.issuance_invoice (
 );
 
 -- 8. Payment Record (For Issuance Invoices)
-CREATE TABLE schema_beer_garden.payment_record (
+CREATE TABLE IF NOT EXISTS schema_beer_garden.payment_record (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id UUID NOT NULL REFERENCES schema_beer_garden.issuance_invoice(id),
     amount_paid DECIMAL(12, 2) NOT NULL,
-    payment_method VARCHAR(20) NOT NULL, 
-    cheque_ref VARCHAR(50),
+    payment_method VARCHAR(20) NOT NULL, -- CASH, CHEQUE
+    reference_number VARCHAR(50), -- Receipt or Cheque No
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 

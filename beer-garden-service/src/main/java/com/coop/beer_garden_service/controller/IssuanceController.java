@@ -28,13 +28,12 @@ public class IssuanceController {
     private BeerItemRepository catalogRepo;
 
     @PostMapping
-    @Transactional // Rolls back everything if stock is insufficient
+    @Transactional
     public ResponseEntity<IssuanceInvoice> createIssuance(
             @RequestBody IssuanceRequest request,
             @RequestHeader(value = "X-User-Role", defaultValue = "ROLE_USER") String userRole) {
 
         IssuanceInvoice invoice = new IssuanceInvoice();
-        // Generate Invoice Number like "INV-171829301"
         invoice.setInvoiceNumber("INV-" + System.currentTimeMillis() % 1000000000);
         invoice.setOperatorName(request.getOperatorName());
         invoice.setIssuedByRole(userRole);
@@ -42,7 +41,6 @@ public class IssuanceController {
         BigDecimal totalStockValue = BigDecimal.ZERO;
         BigDecimal totalCommission = BigDecimal.ZERO;
 
-        // Save parent first to get the UUID
         invoice = invoiceRepo.save(invoice);
 
         for (IssuanceItemRequest reqItem : request.getItems()) {
@@ -53,11 +51,9 @@ public class IssuanceController {
                 throw new RuntimeException("Insufficient stock for: " + catalogItem.getBeerName());
             }
 
-            // 1. Deduct Stock
             catalogItem.setCurrentStock(catalogItem.getCurrentStock() - reqItem.getQuantity());
             catalogRepo.save(catalogItem);
 
-            // 2. Calculate Math
             BigDecimal qty = new BigDecimal(reqItem.getQuantity());
             BigDecimal stockValue = catalogItem.getUnitPrice().multiply(qty);
             BigDecimal commValue = reqItem.getCommissionPerBottle().multiply(qty);
@@ -65,7 +61,6 @@ public class IssuanceController {
             totalStockValue = totalStockValue.add(stockValue);
             totalCommission = totalCommission.add(commValue);
 
-            // 3. Save Line Item
             IssuanceItem lineItem = new IssuanceItem();
             lineItem.setInvoiceId(invoice.getId());
             lineItem.setBeerItemId(catalogItem.getId());
@@ -76,7 +71,6 @@ public class IssuanceController {
             itemRepo.save(lineItem);
         }
 
-        // Finalize Invoice Totals
         invoice.setTotalStockValue(totalStockValue);
         invoice.setTotalCommission(totalCommission);
         invoice.setGrandTotal(totalStockValue.add(totalCommission));

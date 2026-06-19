@@ -1,13 +1,18 @@
 package com.coop.beer_garden_service.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
-import java.util.UUID;
 
 @Data
+@AllArgsConstructor
+@NoArgsConstructor
 public class PaymentRequest {
-    private UUID invoiceId;
-    private BigDecimal amountPaid;
-    private String paymentMethod; // CASH, CHEQUE
-    private String chequeRef; // Reference number[cite: 1]
+
+    private BigDecimal amount;
+    private String method;
+    private String reference;
+
 }

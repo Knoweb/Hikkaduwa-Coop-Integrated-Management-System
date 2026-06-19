@@ -24,7 +24,6 @@ const PriceMatrix: React.FC = () => {
     
     // Add Item State
     const [openAdd, setOpenAdd] = useState(false);
-   // Inside PriceMatrix component:
     const [newItem, setNewItem] = useState({ beerName: '', category: '', unitPrice: '' });
     const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -81,7 +80,6 @@ const PriceMatrix: React.FC = () => {
         (beer.itemCode && beer.itemCode.toLowerCase().includes(searchText.toLowerCase()))
     );
 
-    // --- Price Update Logic ---
     const handleUpdatePrice = async () => {
         if (!newPrice) return;
         try {
@@ -98,7 +96,6 @@ const PriceMatrix: React.FC = () => {
         }
     };
 
-    // --- Add New Item Logic ---
     const handleNewItemChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setNewItem({ ...newItem, [e.target.name]: e.target.value });
     };
@@ -111,7 +108,7 @@ const PriceMatrix: React.FC = () => {
                 beerName: newItem.beerName,
                 category: newItem.category,
                 unitPrice: Number(newItem.unitPrice),
-                currentStock: 0 // New items always start with 0 stock
+                currentStock: 0 
             }, { headers: { 'X-User-Role': userRole } });
             
             alert("New item added to Master Catalog!");
@@ -139,7 +136,6 @@ const PriceMatrix: React.FC = () => {
                         onChange={(e) => setSearchText(e.target.value)}
                         sx={{ width: '250px', backgroundColor: 'white', borderRadius: 1 }}
                     />
-                    {/* NEW: Add Item Button for Admins */}
                     {userRole === 'ROLE_ADMIN' && (
                         <Button variant="contained" color="success" onClick={() => setOpenAdd(true)}>
                             + Add New Beer
@@ -155,7 +151,6 @@ const PriceMatrix: React.FC = () => {
                 initialState={{ sorting: { sortModel: [{ field: 'beerName', sort: 'asc' }] } }}
             />
 
-            {/* 1. Revise Price Dialog */}
             <Dialog open={openEdit} onClose={() => setOpenEdit(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Revise Selling Price</DialogTitle>
                 <DialogContent>
@@ -169,7 +164,6 @@ const PriceMatrix: React.FC = () => {
                 </DialogActions>
             </Dialog>
 
-            {/* 2. Add New Item Dialog */}
             <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Add New Beer to Catalog</DialogTitle>
                 <DialogContent dividers>
