@@ -30,7 +30,6 @@ const GoodsReceivedNote: React.FC = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
 
     useEffect(() => {
-        // Fetch Suppliers AND Master Catalog concurrently
         const fetchData = async () => {
     try {
         const [supplierRes, catalogRes] = await Promise.all([
@@ -39,7 +38,6 @@ const GoodsReceivedNote: React.FC = () => {
         ]);
         setSuppliers(supplierRes.data);
 
-        // SORTING LOGIC: Alphabetical order by beerName
         const sortedCatalog = catalogRes.data.sort((a: BeerItem, b: BeerItem) => 
             a.beerName.localeCompare(b.beerName)
         );
@@ -81,7 +79,7 @@ const GoodsReceivedNote: React.FC = () => {
                 items 
             });
             alert(`GRN processed successfully! Payment: ${paymentMethod}`);
-            // Reset Form
+            
             setSupplierId('');
             setInvoiceReference('');
             setPaymentMethod('CREDIT');
@@ -123,7 +121,6 @@ const GoodsReceivedNote: React.FC = () => {
                 {items.map((item, index) => (
                     <Grid container spacing={2} key={index} sx={{ alignItems: 'center', mb: 2 }}>
                         <Grid size={{ xs: 4 }}>
-                            {/* STRICT DROPDOWN INSTEAD OF TEXT INPUT */}
                             <TextField select fullWidth label="Select Catalog Item" size="small" value={item.beerItemId} onChange={(e) => handleItemChange(index, 'beerItemId', e.target.value)}>
                                 {beerCatalog.length === 0 ? <MenuItem disabled value="">No items found</MenuItem> : null}
                                 {beerCatalog.map(beer => (

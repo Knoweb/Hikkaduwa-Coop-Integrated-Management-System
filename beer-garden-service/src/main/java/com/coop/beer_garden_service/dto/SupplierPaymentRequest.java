@@ -7,6 +7,7 @@ import java.util.UUID;
 @Data
 public class SupplierPaymentRequest {
     private UUID supplierId;
+    private UUID grnId;
     private BigDecimal amount;
     private String paymentReference;
 }

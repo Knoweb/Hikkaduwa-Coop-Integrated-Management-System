@@ -9,7 +9,5 @@ import java.util.UUID;
 
 @Repository
 public interface IssuanceInvoiceRepository extends JpaRepository<IssuanceInvoice, UUID> {
-    // Spring Data JPA automatically writes the SQL for this based on the method name
-    //List<IssuanceInvoice> findByStatus(String status);
-    //List<IssuanceInvoice> findByStatus(String status);
+
 }

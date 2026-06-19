@@ -8,5 +8,4 @@ import java.util.UUID;
 
 @Repository
 public interface BeerItemRepository extends JpaRepository<BeerItem, UUID> {
-    // Spring Data JPA automatically provides findById() and save() methods!
 }

@@ -26,10 +26,13 @@ import StockAdjustmentPage from "./features/milk-shop/stock-adjustments/StockAdj
 
 import BeerGardenDashboard from "./features/beer-garden/BeerGardenDashboard";
 import PriceMatrix from "./features/beer-garden/PriceMatrix";
-import LiquorIssuance from "./features/beer-garden/BeerIssuance";
+import LiquorIssuance from "./features/beer-garden/LiquorIssuance";
 import Commissions from "./features/beer-garden/Commissions";
 import GoodsReceivedNote from "./features/beer-garden/GoodsReceivedNote";
 import SupplierManagement from "./features/beer-garden/SupplierManagement";
+import Receivables from "./features/beer-garden/ReceivablesDashboard";
+import ReportsDashboard from "./features/beer-garden/ReportsDashboard";
+import PurchaseHistory from "./features/beer-garden/PurchaseHistory";
 
 const ProtectedRoute = () => {
   const token = localStorage.getItem('jwt_token');
@@ -101,6 +104,9 @@ function App() {
             <Route path="issuance" element={<LiquorIssuance />} />
             <Route path="prices" element={<PriceMatrix />} />
             <Route path="commissions" element={<Commissions />} />
+            <Route path="receivables" element={<Receivables />} />
+            <Route path="reports" element={<ReportsDashboard />} />
+            <Route path="purchase-history" element={<PurchaseHistory />} />
           </Route>
 
         </Route>

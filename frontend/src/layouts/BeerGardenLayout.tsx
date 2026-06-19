@@ -8,17 +8,18 @@ function BeerGardenLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // Get the role to dynamically change the panel name
   const userRole = localStorage.getItem("user_role");
 
-  // BEER GARDEN MENUS
   const menuItems = [
     { label: "Logistics Dashboard", path: "/beer-garden/dashboard" },
-    { label: "Liquor Issuance", path: "/beer-garden/issuance" },
-    { label: "Supplier Management", path: "/beer-garden/suppliers" },
-    { label: "Goods Received (GRN)", path: "/beer-garden/grn" },
     { label: "Price Matrix", path: "/beer-garden/prices" },
+    { label: "Liquor Issuance", path: "/beer-garden/issuance" },
+    { label: "Accounts Receivable", path: "/beer-garden/receivables" },
+    { label: "Goods Purchase", path: "/beer-garden/grn" },
+    { label: "Supplier Management", path: "/beer-garden/suppliers" },
+    { label: "Purchase History", path: "/beer-garden/purchase-history" },
     { label: "Commissions", path: "/beer-garden/commissions" },
+    { label: "Reports", path: "/beer-garden/reports" },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);
@@ -38,7 +39,7 @@ function BeerGardenLayout() {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            backgroundColor: "#7f1d1d", // Consistent Deep Red
+            backgroundColor: "#7f1d1d",
             color: "white",
             borderRight: "none",
           },
@@ -72,7 +73,6 @@ function BeerGardenLayout() {
         <Box sx={{ mt: "auto", p: 2 }}>
           <Divider sx={{ borderColor: "#b91c1c", mb: 2 }} />
           
-          {/* Conditional Rendering for Admin vs User */}
           <Typography variant="caption" sx={{ color: "#fed7aa", display: "block", mb: 1 }}>
             {userRole === 'ROLE_ADMIN' ? 'Beer Garden Admin Panel' : 'Beer Garden Management Panel'}
           </Typography>

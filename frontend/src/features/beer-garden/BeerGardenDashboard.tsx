@@ -1,25 +1,34 @@
-import React, { useEffect, useState } from 'react';
-import { Box, Typography, Grid, Card, CardContent, CircularProgress, Chip, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow } from '@mui/material';
-import api from '../../api/axiosConfig'; 
+import React, { useEffect, useState, useMemo } from 'react';
+import { 
+    Box, Typography, Grid, Card, CardContent, CircularProgress, Chip, Paper, 
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment 
+} from '@mui/material'; 
+import SearchIcon from '@mui/icons-material/Search';
+import api from '../../api/axiosConfig';
 
 interface IssuanceInvoice {
     id: string;
-    totalLiquorValue: number;
-    commissionTotal: number;
-    grandTotal: number;
-    status: string;
+    invoiceNumber: string;
+    operatorName: string;
     issuedDate: string;
+    grandTotal: number;
+    totalCommission: number;
+    totalLiquorValue: number;
+    status: string;
+    daysOutstanding: number;
+    overdue: boolean;
 }
 
 const BeerGardenDashboard: React.FC = () => {
     const [invoices, setInvoices] = useState<IssuanceInvoice[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
+    const [searchTerm, setSearchTerm] = useState('');
 
     useEffect(() => {
         const fetchReceivables = async () => {
             try {
-                const response = await api.get<IssuanceInvoice[]>('/api/v1/beer-garden/receivables?status=UNPAID');
+                const response = await api.get('/api/v1/beer-garden/receivables');
                 setInvoices(response.data);
             } catch (err) {
                 console.error(err);
@@ -28,103 +37,89 @@ const BeerGardenDashboard: React.FC = () => {
                 setLoading(false);
             }
         };
-
         fetchReceivables();
     }, []);
 
-    const totalExposure = invoices.reduce((sum, inv) => sum + inv.grandTotal, 0);
+    const filteredInvoices = useMemo(() => {
+        return invoices.filter(inv => 
+            inv.operatorName?.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+    }, [invoices, searchTerm]);
+
+    const totalExposure = invoices.reduce((sum, inv) => sum + (inv.status !== 'PAID' ? inv.grandTotal : 0), 0);
+    const totalOverdue = invoices.filter(inv => inv.overdue).length;
 
     return (
-        <Box sx={{ padding: '24px' }}>
+        <Box sx={{ p: 3, bgcolor: '#f8fafc', minHeight: '100vh' }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#451a03', mb: 4 }}>
                 Logistics & Receivables Dashboard
             </Typography>
 
-            {/* KPI Cards Row */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ borderLeft: '6px solid #ef4444', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                <Grid size={{ xs: 12, md:4 }}>
+                    <Card sx={{ borderLeft: '6px solid #ef4444' }}>
                         <CardContent>
-                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                TOTAL CREDIT EXPOSURE (UNPAID)
+                            <Typography variant="subtitle2" color="text.secondary">TOTAL CREDIT EXPOSURE</Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#b91c1c' }}>
+                                Rs. {totalExposure.toLocaleString()}
                             </Typography>
-                            {loading ? <CircularProgress size={24} /> : (
-                                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#b91c1c' }}>
-                                    Rs. {totalExposure.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                                </Typography>
-                            )}
                         </CardContent>
                     </Card>
                 </Grid>
-                <Grid size={{ xs: 12, md: 4 }}>
-                    <Card sx={{ borderLeft: '6px solid #f59e0b', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}>
+                <Grid size={{ xs: 12, md:4 }}>
+                    <Card sx={{ borderLeft: '6px solid #f59e0b' }}>
                         <CardContent>
-                            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                                PENDING INVOICES
+                            <Typography variant="subtitle2" color="text.secondary">CRITICAL OVERDUE INVOICES</Typography>
+                            <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#d97706' }}>
+                                {totalOverdue}
                             </Typography>
-                            {loading ? <CircularProgress size={24} /> : (
-                                <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#d97706' }}>
-                                    {invoices.length}
-                                </Typography>
-                            )}
                         </CardContent>
                     </Card>
                 </Grid>
             </Grid>
 
-            {/* Error Handling */}
-            {error && (
-                <Box sx={{ p: 2, mb: 3, backgroundColor: '#fef2f2', color: '#b91c1c', borderRadius: 1 }}>
-                    {error}
-                </Box>
-            )}
+            {error && <Box sx={{ color: 'red', mb: 2 }}>{error}</Box>}
 
-            {/* Accounts Receivable Data Table */}
-            <Typography variant="h6" sx={{ fontWeight: 'bold', color: '#451a03', mb: 2 }}>
-                Active Receivables Ledger
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6" sx={{ fontWeight: 'bold' }}>Active Receivables Ledger</Typography>
+                <TextField 
+                    placeholder="Search by operator..." 
+                    size="small"
+                    variant="outlined"
+                    InputProps={{ 
+                        startAdornment: (
+                            <InputAdornment position="start">
+                                <SearchIcon sx={{ color: 'gray' }} />
+                            </InputAdornment>
+                        ) 
+                    }}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                />
+            </Box>
             
-            <TableContainer component={Paper} sx={{ boxShadow: '0 1px 3px rgba(0,0,0,0.1)' }}>
-                <Table sx={{ minWidth: 650 }}>
-                    <TableHead sx={{ backgroundColor: '#f8fafc' }}>
+            <TableContainer component={Paper} sx={{ borderRadius: 2 }}>
+                <Table>
+                    <TableHead sx={{ bgcolor: '#f1f5f9' }}>
                         <TableRow>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Invoice ID</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold' }}>Issued Date</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Liquor Value</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Commission</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Grand Total</TableCell>
-                            <TableCell sx={{ fontWeight: 'bold', textAlign: 'center' }}>Status</TableCell>
+                            <TableCell><b>Operator</b></TableCell>
+                            <TableCell><b>Issued Date</b></TableCell>
+                            <TableCell align="right"><b>Grand Total</b></TableCell>
+                            <TableCell align="center"><b>Status</b></TableCell>
+                            <TableCell align="center"><b>Aging</b></TableCell>
                         </TableRow>
                     </TableHead>
                     <TableBody>
-                        {invoices.length === 0 && !loading && (
-                            <TableRow>
-                                <TableCell colSpan={6} align="center" sx={{ py: 3, color: 'text.secondary' }}>
-                                    No unpaid invoices found.
-                                </TableCell>
-                            </TableRow>
-                        )}
-                        {invoices.map((invoice) => (
-                            <TableRow key={invoice.id} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                                <TableCell sx={{ fontFamily: 'monospace', fontSize: '13px' }}>
-                                    {invoice.id.split('-')[0].toUpperCase()}...
-                                </TableCell>
-                                <TableCell>
-                                    {new Date(invoice.issuedDate).toLocaleDateString()}
-                                </TableCell>
-                                <TableCell align="right">Rs. {invoice.totalLiquorValue.toLocaleString()}</TableCell>
-                                <TableCell align="right">Rs. {invoice.commissionTotal.toLocaleString()}</TableCell>
-                                <TableCell align="right" sx={{ fontWeight: 'bold' }}>
-                                    Rs. {invoice.grandTotal.toLocaleString()}
+                        {filteredInvoices.map((inv) => (
+                            <TableRow key={inv.id} hover>
+                                <TableCell>{inv.operatorName}</TableCell>
+                                <TableCell>{new Date(inv.issuedDate).toLocaleDateString()}</TableCell>
+                                <TableCell align="right">Rs. {inv.grandTotal.toLocaleString()}</TableCell>
+                                <TableCell align="center">
+                                    <Chip label={inv.status} color={inv.status === 'PAID' ? 'success' : 'error'} size="small" />
                                 </TableCell>
                                 <TableCell align="center">
-                                    <Chip 
-                                        label={invoice.status} 
-                                        size="small" 
-                                        color={invoice.status === 'UNPAID' ? 'error' : 'warning'} 
-                                        variant="outlined" 
-                                        sx={{ fontWeight: 'bold' }} 
-                                    />
+                                    {inv.daysOutstanding} days
+                                    {inv.overdue && <Chip label="OVERDUE" color="error" size="small" sx={{ ml: 1 }} />}
                                 </TableCell>
                             </TableRow>
                         ))}

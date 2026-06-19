@@ -17,12 +17,11 @@ public class SupplierPayment {
     @Column(nullable = false)
     private UUID supplierId;
 
-    private UUID grnInvoiceId; // Nullable if it's a general payment against the total balance
-
+    private UUID grnInvoiceId;
     private LocalDateTime paymentDate = LocalDateTime.now();
 
     @Column(nullable = false)
     private BigDecimal amount;
 
-    private String paymentReference; // e.g., "Cheque No: 12345"
+    private String paymentReference;
 }

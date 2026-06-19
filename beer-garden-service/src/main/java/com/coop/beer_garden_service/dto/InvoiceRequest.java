@@ -1,6 +1,6 @@
 package com.coop.beer_garden_service.dto;
 
-import lombok.Data; // Lombok dependency eka project eke thiyena bawa confirm karaganna
+import lombok.Data;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
