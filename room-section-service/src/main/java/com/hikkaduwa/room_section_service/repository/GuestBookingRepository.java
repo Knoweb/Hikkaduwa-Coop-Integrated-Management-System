@@ -103,4 +103,12 @@ public interface GuestBookingRepository extends JpaRepository<GuestBooking, UUID
             @Param("startDateTime") LocalDateTime startDateTime,
             @Param("endDateTime") LocalDateTime endDateTime
     );
+
+    @Query("""
+       SELECT g
+       FROM GuestBooking g
+       WHERE g.status = 'ACTIVE'
+       AND g.checkIn <= :now
+       """)
+    List<GuestBooking> findStartedActiveBookings(@Param("now") LocalDateTime now);
 }

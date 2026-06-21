@@ -55,6 +55,17 @@ public class BookingService {
             throw new RuntimeException("Room is already booked for the selected date range");
         }
 
+        int adults = request.getAdults() == null ? 1 : request.getAdults();
+        int children = request.getChildren() == null ? 0 : request.getChildren();
+
+        BigDecimal serviceChargeAmount = request.getServiceChargeAmount() == null
+                ? BigDecimal.ZERO
+                : request.getServiceChargeAmount().setScale(2, RoundingMode.HALF_UP);
+
+        BigDecimal advancePayment = request.getAdvancePayment() == null
+                ? BigDecimal.ZERO
+                : request.getAdvancePayment().setScale(2, RoundingMode.HALF_UP);
+
         long noOfDays = ChronoUnit.DAYS.between(
                 request.getCheckIn().toLocalDate(),
                 request.getCheckOut().toLocalDate()
@@ -93,6 +104,10 @@ public class BookingService {
                 .add(extraHourCharge)
                 .setScale(2, RoundingMode.HALF_UP);
 
+        BigDecimal taxableAmount = subTotal
+                .add(serviceChargeAmount)
+                .setScale(2, RoundingMode.HALF_UP);
+
         RoomBillingSetting billingSetting = roomBillingSettingService.getBillingSetting();
 
         BigDecimal vatRate = billingSetting.getVatRate();
@@ -102,19 +117,19 @@ public class BookingService {
                 .add(ssclRate)
                 .divide(BigDecimal.valueOf(100), 4, RoundingMode.HALF_UP);
 
-        BigDecimal taxAmount = subTotal
+        BigDecimal taxAmount = taxableAmount
                 .multiply(taxPercentage)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal totalDue = subTotal
+        BigDecimal totalDue = taxableAmount
                 .add(taxAmount)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        BigDecimal advancePayment = request.getAdvancePayment() == null
-                ? BigDecimal.ZERO
-                : request.getAdvancePayment();
-
         BigDecimal balanceDue = totalDue.subtract(advancePayment);
+
+        if (balanceDue.compareTo(BigDecimal.ZERO) < 0) {
+            balanceDue = BigDecimal.ZERO;
+        }
 
         GuestBooking booking = GuestBooking.builder()
                 .room(room)
@@ -122,9 +137,12 @@ public class BookingService {
                 .nicPassport(request.getNicPassport())
                 .checkIn(request.getCheckIn())
                 .checkOut(request.getCheckOut())
+                .adults(adults)
+                .children(children)
                 .noOfDays((int) noOfDays)
                 .extraHours((int) extraHours)
                 .extraHourCharge(extraHourCharge)
+                .serviceChargeAmount(serviceChargeAmount)
                 .vatRate(vatRate)
                 .ssclRate(ssclRate)
                 .advancePayment(advancePayment)
@@ -147,10 +165,13 @@ public class BookingService {
                 .guestName(savedBooking.getGuestName())
                 .checkIn(savedBooking.getCheckIn())
                 .checkOut(savedBooking.getCheckOut())
+                .adults(savedBooking.getAdults())
+                .children(savedBooking.getChildren())
                 .noOfDays(noOfDays)
                 .extraHours(extraHours)
                 .roomCharge(roomCharge)
                 .extraHourCharge(extraHourCharge)
+                .serviceChargeAmount(serviceChargeAmount)
                 .vatRate(vatRate)
                 .ssclRate(ssclRate)
                 .subTotal(subTotal)
@@ -261,6 +282,10 @@ public class BookingService {
 
         if (!booking.getStatus().equals("ACTIVE")) {
             throw new RuntimeException("Only active bookings can be checked out");
+        }
+
+        if (!"PAID".equalsIgnoreCase(booking.getPaymentStatus())) {
+            throw new RuntimeException("Full payment must be received before check-out");
         }
 
         booking.setStatus("CHECKED_OUT");

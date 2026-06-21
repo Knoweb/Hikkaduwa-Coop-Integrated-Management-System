@@ -36,6 +36,12 @@ public class GuestBooking {
     @Column(name = "check_out")
     private LocalDateTime checkOut;
 
+    @Column(nullable = false)
+    private Integer adults = 1;
+
+    @Column(nullable = false)
+    private Integer children = 0;
+
     @Column(name = "no_of_days")
     private Integer noOfDays;
 
@@ -44,6 +50,9 @@ public class GuestBooking {
 
     @Column(name = "extra_hour_charge", precision = 12, scale = 2)
     private BigDecimal extraHourCharge;
+
+    @Column(name = "service_charge_amount", precision = 12, scale = 2)
+    private BigDecimal serviceChargeAmount = BigDecimal.ZERO;
 
     @Column(name = "vat_rate", precision = 5, scale = 2)
     private BigDecimal vatRate;

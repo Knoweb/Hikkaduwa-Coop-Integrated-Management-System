@@ -367,7 +367,7 @@ function BookingForm({
                 mt: 2,
               }}
             >
-              {/* <Box>
+              <Box>
                 <Typography color="text.secondary">No. of Guests</Typography>
                 <Typography sx={{ fontWeight: "bold" }}>
                   {totalGuests}
@@ -386,7 +386,7 @@ function BookingForm({
                 <Typography sx={{ fontWeight: "bold" }}>
                   {formData.children || 0}
                 </Typography>
-              </Box> */}
+              </Box>
 
               <Box>
                 <Typography color="text.secondary">Nights</Typography>

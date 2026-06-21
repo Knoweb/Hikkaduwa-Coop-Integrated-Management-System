@@ -17,11 +17,15 @@ public class BookingResponse {
     private LocalDateTime checkIn;
     private LocalDateTime checkOut;
 
+    private Integer adults;
+    private Integer children;
+
     private long noOfDays;
     private long extraHours;
 
     private BigDecimal roomCharge;
     private BigDecimal extraHourCharge;
+    private BigDecimal serviceChargeAmount;
 
     private BigDecimal vatRate;
     private BigDecimal ssclRate;

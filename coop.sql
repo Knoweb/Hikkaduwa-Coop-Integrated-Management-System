@@ -242,8 +242,12 @@ CREATE TABLE schema_room_section.room_billing_setting (
 CREATE TABLE schema_room_section.guest_booking (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     room_id UUID NOT NULL REFERENCES schema_room_section.room(id),
+    
     guest_name VARCHAR(100) NOT NULL,
     nic_passport VARCHAR(50) NOT NULL,
+    adults INT DEFAULT 1,                            
+    children INT DEFAULT 0,                            
+    
     check_in TIMESTAMP NOT NULL,
     check_out TIMESTAMP,
 
@@ -251,19 +255,21 @@ CREATE TABLE schema_room_section.guest_booking (
     extra_hours INT DEFAULT 0,
     extra_hour_charge DECIMAL(12, 2) DEFAULT 0.00,
 
+    service_charge_amount DECIMAL(12, 2) DEFAULT 0.00, 
+
     advance_payment DECIMAL(10, 2) DEFAULT 0.00,
 
     final_payment_amount DECIMAL(12, 2) DEFAULT 0.00,
     final_payment_date TIMESTAMP,
-    payment_status VARCHAR(20) DEFAULT 'PARTIAL', -- PARTIAL, PAID
+    payment_status VARCHAR(20) DEFAULT 'PARTIAL',       -- PARTIAL, PAID
 
     sub_total DECIMAL(12, 2) NOT NULL,
     vat_rate DECIMAL(5, 2) DEFAULT 18.00,
     sscl_rate DECIMAL(5, 2) DEFAULT 2.50,
-    tax_amount DECIMAL(10, 2) NOT NULL, -- VAT + SSCL
+    tax_amount DECIMAL(10, 2) NOT NULL,                 -- VAT + SSCL
     total_due DECIMAL(12, 2) NOT NULL,
 
-    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE' -- ACTIVE, CHECKED_OUT, CANCELLED
+    status VARCHAR(20) NOT NULL DEFAULT 'ACTIVE'        -- ACTIVE, CHECKED_OUT, CANCELLED
 );
 
 CREATE TABLE schema_room_section.daily_remittance (

@@ -25,19 +25,14 @@ public class RoomStatusSyncService {
     public void syncRoomStatuses() {
         LocalDateTime now = LocalDateTime.now();
 
-        List<GuestBooking> expiredBookings =
-                guestBookingRepository.findExpiredActiveBookings(now);
+        /*
+         * Do not auto check-out when check-out time is over.
+         * Check-out must be done manually after full payment is received.
+         */
+        List<GuestBooking> startedActiveBookings =
+                guestBookingRepository.findStartedActiveBookings(now);
 
-        for (GuestBooking booking : expiredBookings) {
-            booking.setStatus("CHECKED_OUT");
-        }
-
-        guestBookingRepository.saveAll(expiredBookings);
-
-        List<GuestBooking> currentActiveBookings =
-                guestBookingRepository.findCurrentActiveBookings(now);
-
-        Set<UUID> occupiedRoomIds = currentActiveBookings.stream()
+        Set<UUID> occupiedRoomIds = startedActiveBookings.stream()
                 .map(booking -> booking.getRoom().getId())
                 .collect(Collectors.toSet());
 
