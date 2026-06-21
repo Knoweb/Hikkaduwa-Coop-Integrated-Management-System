@@ -41,6 +41,17 @@ type Remittance = {
   message: string;
 };
 
+type Booking = {
+  id: string;
+  checkIn: string;
+  checkOut: string;
+  advancePayment: MoneyValue;
+  finalPaymentAmount: MoneyValue;
+  finalPaymentDate?: string | null;
+  paymentStatus: string;
+  status: string;
+};
+
 const TEMP_RECEPTIONIST_ID = "00000000-0000-0000-0000-000000000001";
 
 const formatMoney = (value: MoneyValue) => {
@@ -58,8 +69,16 @@ const getCurrentMonthValue = () => {
   return `${year}-${month}`;
 };
 
+const isSameDate = (dateTimeValue: string | null | undefined, date: string) => {
+  if (!dateTimeValue || !date) return false;
+
+  return dateTimeValue.startsWith(date);
+};
+
 function RemittancePage() {
   const [remittances, setRemittances] = useState<Remittance[]>([]);
+  const [bookings, setBookings] = useState<Booking[]>([]);
+
   const [remittanceDate, setRemittanceDate] = useState("");
   const [totalCollected, setTotalCollected] = useState("");
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
@@ -91,9 +110,51 @@ function RemittancePage() {
     }
   };
 
+  const loadBookings = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`);
+
+      if (!response.ok) {
+        throw new Error("Failed to load bookings");
+      }
+
+      const data: Booking[] = await response.json();
+
+      setBookings(data);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to load bookings. Check room-section-service.");
+    }
+  };
+
   useEffect(() => {
     loadRemittances();
+    loadBookings();
   }, []);
+
+  const calculateExpectedCashTotal = (date: string) => {
+    if (!date) return 0;
+
+    return bookings.reduce((total, booking) => {
+      if (booking.status === "CANCELLED") {
+        return total;
+      }
+
+      const advanceToday = isSameDate(booking.checkIn, date)
+        ? Number(booking.advancePayment || 0)
+        : 0;
+
+      const finalPaymentToday =
+        booking.paymentStatus === "PAID" &&
+        isSameDate(booking.finalPaymentDate, date)
+          ? Number(booking.finalPaymentAmount || 0)
+          : 0;
+
+      return total + advanceToday + finalPaymentToday;
+    }, 0);
+  };
+
+  const expectedCashTotal = calculateExpectedCashTotal(remittanceDate);
 
   const filteredRemittances = remittances.filter((item) => {
     if (!selectedMonth) return true;
@@ -139,6 +200,7 @@ function RemittancePage() {
       setTotalCollected("");
 
       await loadRemittances();
+      await loadBookings();
 
       setMessage(savedData.message || "Daily remittance recorded successfully.");
     } catch (err) {
@@ -230,12 +292,34 @@ function RemittancePage() {
               />
 
               <TextField
+                label="Expected Cash Total"
+                fullWidth
+                value={`Rs. ${formatMoney(expectedCashTotal)}`}
+                disabled
+                helperText="Advance payments + final payments received on selected date"
+              />
+
+              <TextField
                 label="Actual Total Collected"
                 type="number"
                 fullWidth
                 value={totalCollected}
                 onChange={(e) => setTotalCollected(e.target.value)}
                 placeholder="Example: 25000"
+              />
+
+              <TextField
+                label="Difference"
+                fullWidth
+                value={
+                  remittanceDate && totalCollected
+                    ? `Rs. ${formatMoney(
+                        Number(totalCollected || 0) - expectedCashTotal
+                      )}`
+                    : "Rs. 0.00"
+                }
+                disabled
+                helperText="Actual Total Collected - Expected Cash Total"
               />
 
               <Box
@@ -334,7 +418,9 @@ function RemittancePage() {
             <TableBody>
               {filteredRemittances.map((item) => (
                 <TableRow key={item.id || item.remittanceId}>
-                  <TableCell sx={{ fontWeight: "bold" }}>{item.remittanceDate}</TableCell>
+                  <TableCell sx={{ fontWeight: "bold" }}>
+                    {item.remittanceDate}
+                  </TableCell>
 
                   <TableCell>
                     Rs. {formatMoney(item.expectedInvoiceTotal)}

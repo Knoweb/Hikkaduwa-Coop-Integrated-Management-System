@@ -117,16 +117,26 @@ function BookingForm({
     ? Number(selectedRoom.extraHourRate || 0) * extraHours
     : 0;
 
+  const serviceChargeAmount = Number(formData.serviceChargeAmount || 0);
+
   const subTotal = roomCharge + extraHourCharge;
 
-  const taxRate =
-    (Number(billingSetting.vatRate || 0) +
-      Number(billingSetting.ssclRate || 0)) /
-    100;
+  const taxableAmount = subTotal + serviceChargeAmount;
 
-  const taxAmount = subTotal * taxRate;
-  const totalDue = subTotal + taxAmount;
+  const vatAmount =
+    (taxableAmount * Number(billingSetting.vatRate || 0)) / 100;
+
+  const ssclAmount =
+    (taxableAmount * Number(billingSetting.ssclRate || 0)) / 100;
+
+  const taxAmount = vatAmount + ssclAmount;
+
+  const totalDue = taxableAmount + taxAmount;
+
   const balanceAmount = totalDue - Number(formData.advancePayment || 0);
+
+  const totalGuests =
+    Number(formData.adults || 0) + Number(formData.children || 0);
 
   const updateField = (field: keyof BookingFormData, value: string) => {
     if (field === "checkIn" || field === "checkOut") {
@@ -183,6 +193,32 @@ function BookingForm({
               value={formData.nicPassport}
               onChange={(e) => updateField("nicPassport", e.target.value)}
               placeholder="Example: 991234567V"
+            />
+
+            <TextField
+              label="Adults"
+              type="number"
+              fullWidth
+              value={formData.adults}
+              onChange={(e) => updateField("adults", e.target.value)}
+              slotProps={{
+                htmlInput: {
+                  min: 1,
+                },
+              }}
+            />
+
+            <TextField
+              label="Children"
+              type="number"
+              fullWidth
+              value={formData.children}
+              onChange={(e) => updateField("children", e.target.value)}
+              slotProps={{
+                htmlInput: {
+                  min: 0,
+                },
+              }}
             />
 
             <TextField
@@ -277,12 +313,33 @@ function BookingForm({
             </TextField>
 
             <TextField
+              label="Service Charge"
+              type="number"
+              fullWidth
+              value={formData.serviceChargeAmount}
+              onChange={(e) =>
+                updateField("serviceChargeAmount", e.target.value)
+              }
+              placeholder="Example: 500"
+              slotProps={{
+                htmlInput: {
+                  min: 0,
+                },
+              }}
+            />
+
+            <TextField
               label="Advance Payment"
               type="number"
               fullWidth
               value={formData.advancePayment}
               onChange={(e) => updateField("advancePayment", e.target.value)}
               placeholder="Example: 5000"
+              slotProps={{
+                htmlInput: {
+                  min: 0,
+                },
+              }}
             />
           </Box>
 
@@ -310,6 +367,27 @@ function BookingForm({
                 mt: 2,
               }}
             >
+              {/* <Box>
+                <Typography color="text.secondary">No. of Guests</Typography>
+                <Typography sx={{ fontWeight: "bold" }}>
+                  {totalGuests}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography color="text.secondary">Adults</Typography>
+                <Typography sx={{ fontWeight: "bold" }}>
+                  {formData.adults || 0}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography color="text.secondary">Children</Typography>
+                <Typography sx={{ fontWeight: "bold" }}>
+                  {formData.children || 0}
+                </Typography>
+              </Box> */}
+
               <Box>
                 <Typography color="text.secondary">Nights</Typography>
                 <Typography sx={{ fontWeight: "bold" }}>{nights}</Typography>
@@ -342,6 +420,20 @@ function BookingForm({
                 <Typography color="text.secondary">Sub Total</Typography>
                 <Typography sx={{ fontWeight: "bold" }}>
                   Rs. {formatMoney(subTotal)}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography color="text.secondary">Service Charge</Typography>
+                <Typography sx={{ fontWeight: "bold" }}>
+                  Rs. {formatMoney(serviceChargeAmount)}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography color="text.secondary">Taxable Amount</Typography>
+                <Typography sx={{ fontWeight: "bold" }}>
+                  Rs. {formatMoney(taxableAmount)}
                 </Typography>
               </Box>
 

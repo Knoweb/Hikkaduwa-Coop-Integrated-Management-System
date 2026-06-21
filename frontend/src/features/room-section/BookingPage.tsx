@@ -25,9 +25,14 @@ export type Booking = {
   checkIn: string;
   checkOut: string;
 
+  adults: number;
+  children: number;
+
   noOfDays?: number;
   extraHours?: number;
   extraHourCharge?: MoneyValue;
+  serviceChargeAmount: MoneyValue;
+
   vatRate?: MoneyValue;
   ssclRate?: MoneyValue;
 
@@ -63,6 +68,9 @@ export type BookingFormData = {
   nicPassport: string;
   checkIn: string;
   checkOut: string;
+  adults: string;
+  children: string;
+  serviceChargeAmount: string;
   advancePayment: string;
 };
 
@@ -99,6 +107,9 @@ function BookingPage() {
     checkIn: getTodayDateTime(),
     checkOut: "",
     advancePayment: "0",
+    adults: "1",
+    children: "0",
+    serviceChargeAmount: "0",
   });
 
   const [selectedInvoiceBooking, setSelectedInvoiceBooking] =
@@ -282,6 +293,9 @@ function BookingPage() {
           nicPassport: formData.nicPassport,
           checkIn: formData.checkIn,
           checkOut: formData.checkOut,
+          adults: Number(formData.adults || 1),
+          children: Number(formData.children || 0),
+          serviceChargeAmount: Number(formData.serviceChargeAmount || 0),
           advancePayment: Number(formData.advancePayment || 0),
         }),
       });
@@ -297,6 +311,9 @@ function BookingPage() {
         checkIn: getTodayDateTime(),
         checkOut: "",
         advancePayment: "0",
+        adults: "1",
+        children: "0",
+        serviceChargeAmount: "0",
       });
 
       resetAvailability();
@@ -452,7 +469,6 @@ function BookingPage() {
         open={!!selectedInvoiceBooking}
         booking={selectedInvoiceBooking}
         onClose={closeInvoiceDialog}
-        onError={setError}
       />
 
       <Snackbar
