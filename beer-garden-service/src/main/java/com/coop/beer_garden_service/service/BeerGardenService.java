@@ -15,8 +15,6 @@ import com.coop.beer_garden_service.repository.BeerGardenGrnRepository;
 import com.coop.beer_garden_service.repository.SupplierRepository;
 import com.coop.beer_garden_service.repository.BeerItemRepository;
 
-import com.coop.beer_garden_service.entity.AuditLog;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,8 +28,6 @@ import java.util.stream.Collectors;
 
 @Service
 public class BeerGardenService {
-
-    private final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
     private IssuanceInvoiceRepository invoiceRepository;
@@ -134,14 +130,7 @@ public class BeerGardenService {
 
             // Save the line item record
             issuanceItemRepository.save(issuanceItem);
-            AuditLog log = AuditLog.builder()
-                    .userId(currentUserUuid)
-                    .serviceName("BEER-GARDEN-SERVICE")
-                    .action("CREATE_ISSUANCE")
-                    .description("Beer issuance to restaurant: " + request.getDetails())
-                    .build();
 
-            restTemplate.postForObject("http://ADMIN-SERVICE/api/v1/admin/logs", log, AuditLog.class);
         }
 
         return invoice;
