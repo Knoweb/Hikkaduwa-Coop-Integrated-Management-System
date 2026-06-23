@@ -5,8 +5,10 @@ import {
   List,
   ListItemButton,
   Typography,
+  Button,
 } from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { logoutUser } from "../services/authService"; 
 
 const drawerWidth = 240;
 
@@ -44,6 +46,11 @@ function MainLayout() {
 
     return location.pathname.startsWith(path);
   };
+
+  const handleLogout = () => {
+        logoutUser();
+        navigate('/login');
+    }
 
   return (
     <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#fff7ed" }}>
@@ -113,6 +120,17 @@ function MainLayout() {
           <Typography variant="caption" sx={{ color: "#fed7aa" }}>
             Room Section Panel
           </Typography>
+
+          <Button 
+              variant="outlined" 
+              size="small" 
+              color="inherit" 
+              fullWidth 
+              onClick={handleLogout}
+              sx={{ borderColor: '#b91c1c', mt: 1,'&:hover': { backgroundColor: '#b91c1c' } }}
+              >
+                Logout
+            </Button>
         </Box>
       </Drawer>
 

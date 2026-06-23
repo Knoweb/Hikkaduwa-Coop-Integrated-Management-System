@@ -9,6 +9,9 @@ import BeerGardenLayout from "./layouts/BeerGardenLayout";
 // --- Pages ---
 import Login from "./features/auth/Login";
 import AdminDashboard from "./features/admin/AdminDashboard";
+import UtilityBillDashboard from "./features/admin/UtilityBillDashboard";
+import UserManagementDashboard from "./features/admin/UserManagementDashboard";
+import SystemAuditLogs from "./features/admin/SystemAuditLogs";
 
 import RoomDashboardPage from "./features/room-section/RoomDashboardPage";
 import RoomPage from "./features/room-section/RoomPage";
@@ -34,26 +37,41 @@ import Receivables from "./features/beer-garden/ReceivablesDashboard";
 import ReportsDashboard from "./features/beer-garden/ReportsDashboard";
 import PurchaseHistory from "./features/beer-garden/PurchaseHistory";
 
-const ProtectedRoute = () => {
+// --- UPGRADED: Role-Based Protected Route ---
+const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
   const token = localStorage.getItem('jwt_token');
-  return token ? <Outlet /> : <Navigate to="/login" replace />;
+  const userRole = localStorage.getItem('user_role');
+
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (userRole && !allowedRoles.includes(userRole)) {
+    console.warn(`Security Event: Role ${userRole} attempted unauthorized access.`);
+    return <Navigate to="/" replace />; 
+  }
+
+  return <Outlet />;
 };
 
-// --- NEW: Smart Traffic Controller ---
 const RootBoundary = () => {
   const token = localStorage.getItem('jwt_token');
+  const role = localStorage.getItem('user_role'); 
   
-  // 1. If no token, kick them to login page immediately
   if (!token) return <Navigate to="/login" replace />;
 
-  // 2. If token exists, check their role and send them to their specific dashboard
-  const role = localStorage.getItem('user_role');
   switch (role) {
-    case 'milk-shop': return <Navigate to="/milk-shop/dashboard" replace />;
-    case 'beer-garden': return <Navigate to="/beer-garden/dashboard" replace />;
-    case 'room-section': return <Navigate to="/rooms/dashboard" replace />;
-    case 'dashboard': return <Navigate to="/admin/dashboard" replace />;
-    default: return <Navigate to="/login" replace />;
+    case 'ROLE_ADMIN': 
+        return <Navigate to="/admin/dashboard" replace />;
+    case 'ROLE_MILK_SHOP': 
+        return <Navigate to="/milk-shop/dashboard" replace />;
+    case 'ROLE_BEER_GARDEN': 
+        return <Navigate to="/beer-garden/dashboard" replace />;
+    case 'ROLE_ROOM_BOOKING': 
+        return <Navigate to="/rooms/dashboard" replace />;
+    default: 
+        localStorage.clear();
+        return <Navigate to="/login" replace />;
   }
 };
 
@@ -63,17 +81,17 @@ function App() {
       <Routes>
         <Route path="/login" element={<Login />} />
 
-        <Route element={<ProtectedRoute />}>
-          
-          {/* 1. ADMIN DOMAIN */}
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN']} />}>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="users" element={<AdminDashboard />} /> 
-            <Route path="logs" element={<AdminDashboard />} />
+            <Route path="utilities" element={<UtilityBillDashboard />} />
+            <Route path="users" element={<UserManagementDashboard />} /> 
+            <Route path="logs" element={<SystemAuditLogs />} />
           </Route>
+        </Route>
 
-          {/* 2. ROOM SECTION DOMAIN */}
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_ROOM_BOOKING']} />}>
           <Route path="/rooms" element={<RoomLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<RoomDashboardPage />} />
@@ -82,8 +100,9 @@ function App() {
             <Route path="occupancy" element={<OccupancyMatrixPage />} />
             <Route path="remittance" element={<RemittancePage />} />
           </Route>
+        </Route>
 
-          {/* 3. MILK SHOP DOMAIN */}
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_MILK_SHOP']} />}>
           <Route path="/milk-shop" element={<MilkShopLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<MilkShopDashboard />} />
@@ -94,8 +113,9 @@ function App() {
             <Route path="daily-sales" element={<DailySalesPage />} />
             <Route path="stock-adjustments" element={<StockAdjustmentPage />} />
           </Route>
+        </Route>
 
-          {/* 4. BEER GARDEN DOMAIN */}
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_ADMIN', 'ROLE_BEER_GARDEN']} />}>
           <Route path="/beer-garden" element={<BeerGardenLayout />}>
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<BeerGardenDashboard />} />
@@ -108,10 +128,8 @@ function App() {
             <Route path="reports" element={<ReportsDashboard />} />
             <Route path="purchase-history" element={<PurchaseHistory />} />
           </Route>
-
         </Route>
 
-        {/* --- NEW: Attach the Traffic Controller to the root and catch-all routes --- */}
         <Route path="/" element={<RootBoundary />} />
         <Route path="*" element={<RootBoundary />} />
 

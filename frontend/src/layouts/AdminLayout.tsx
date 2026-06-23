@@ -1,5 +1,6 @@
-import { Box, Divider, Drawer, List, ListItemButton, Typography } from "@mui/material";
+import { Box, Divider, Drawer, List, ListItemButton, Typography, Button } from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { logoutUser } from "../services/authService"; // Ensure this path matches your folder structure
 
 const drawerWidth = 240;
 
@@ -7,17 +8,25 @@ function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const userRole = localStorage.getItem("user_role");
+
   // ONLY ADMIN MENUS
   const menuItems = [
     { label: "Global Dashboard", path: "/admin/dashboard" },
+    { label: "Utility Allocations", path: "/admin/utilities" },
     { label: "User Management", path: "/admin/users" },
-    { label: "System Audit Logs", path: "/admin/logs" },
+    // { label: "System Audit Logs", path: "/admin/logs" },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);
 
+  const handleLogout = () => {
+      logoutUser();
+      navigate('/login');
+  }
+
   return (
-    <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#f8fafc" }}>
+    <Box sx={{ display: "flex", minHeight: "100vh", backgroundColor: "#fff7ed" }}>
       <Drawer
         variant="permanent"
         sx={{
@@ -26,7 +35,7 @@ function AdminLayout() {
           "& .MuiDrawer-paper": {
             width: drawerWidth,
             boxSizing: "border-box",
-            backgroundColor: "#0f172a", // Navy Blue Branding
+            backgroundColor: "#7f1d1d",
             color: "white",
             borderRight: "none",
           },
@@ -34,9 +43,9 @@ function AdminLayout() {
       >
         <Box sx={{ px: 2, py: 3 }}>
           <Typography variant="h6" sx={{ fontWeight: "bold" }}>Coop System</Typography>
-          <Typography variant="body2" sx={{ color: "#94a3b8", mt: 0.5 }}>System Administration</Typography>
+          <Typography variant="body2" sx={{ color: "#fed7aa", mt: 0.5 }}>System Administration</Typography>
         </Box>
-        <Divider sx={{ borderColor: "#334155" }} />
+        <Divider sx={{ borderColor: "#b91c1c" }} />
         <List sx={{ px: 1, mt: 1 }}>
           {menuItems.map((item) => (
             <ListItemButton
@@ -45,9 +54,9 @@ function AdminLayout() {
               onClick={() => navigate(item.path)}
               sx={{
                 borderRadius: 2, mb: 0.5, color: "white",
-                "&.Mui-selected": { backgroundColor: "#FF5A00", color: "white" },
+                "&.Mui-selected": { backgroundColor: "#f97316", color: "white" },
                 "&.Mui-selected:hover": { backgroundColor: "#ea580c" },
-                "&:hover": { backgroundColor: "#1e293b" },
+                "&:hover": { backgroundColor: "#991b1b" },
               }}
             >
               <Typography sx={{ fontSize: 15, fontWeight: isActive(item.path) ? "bold" : "normal" }}>
@@ -56,6 +65,25 @@ function AdminLayout() {
             </ListItemButton>
           ))}
         </List>
+        
+        <Box sx={{ mt: "auto", p: 2 }}>
+          <Divider sx={{ borderColor: "#b91c1c", mb: 2 }} />
+          
+          <Typography variant="caption" sx={{ color: "#fed7aa", display: "block", mb: 1 }}>
+            {userRole === 'ROLE_ADMIN' ? 'Global Admin Panel' : 'System Administration'}
+          </Typography>
+
+          <Button 
+            variant="outlined" 
+            size="small" 
+            color="inherit" 
+            fullWidth 
+            onClick={handleLogout}
+            sx={{ borderColor: '#b91c1c', '&:hover': { backgroundColor: '#b91c1c' } }}
+          >
+            Logout
+          </Button>
+        </Box>
       </Drawer>
       <Box component="main" sx={{ flexGrow: 1, p: 3 }}>
         <Outlet />

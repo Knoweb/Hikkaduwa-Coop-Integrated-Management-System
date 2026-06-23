@@ -88,7 +88,7 @@ function SummaryCards({ adjustments, selectedDate }: Props) {
 
       <Card sx={{ borderRadius: 3 }}>
         <CardContent>
-          <Typography color="text.secondary">{selectedDate} Reduced Amount</Typography>
+          <Typography color="text.secondary">{selectedDate} Today Income</Typography>
 
           <Typography variant="h4" sx={{ fontWeight: "bold", mt: 1 }}>
             Rs. {formatMoney(totalReducedAmount)}

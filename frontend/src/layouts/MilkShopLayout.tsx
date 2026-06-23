@@ -5,8 +5,10 @@ import {
   List,
   ListItemButton,
   Typography,
+  Button,
 } from "@mui/material";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
+import { logoutUser } from "../services/authService"; 
 
 const drawerWidth = 240;
 
@@ -48,6 +50,11 @@ function MilkShopLayout() {
   const isActive = (path: string) => {
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
+
+  const handleLogout = () => {
+        logoutUser();
+        navigate('/login');
+    }
 
   return (
     <Box
@@ -127,6 +134,17 @@ function MilkShopLayout() {
           <Typography variant="caption" sx={{ color: "#fed7aa" }}>
             Milk Shop Panel
           </Typography>
+
+            <Button 
+              variant="outlined" 
+              size="small" 
+              color="inherit" 
+              fullWidth 
+              onClick={handleLogout}
+              sx={{ borderColor: '#b91c1c', mt: 1,'&:hover': { backgroundColor: '#b91c1c' } }}
+              >
+                Logout
+            </Button>
         </Box>
       </Drawer>
 

@@ -16,20 +16,21 @@ CREATE SCHEMA IF NOT EXISTS schema_room_section;
 
 CREATE TABLE schema_admin.users (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(150) NOT NULL,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    role VARCHAR(50) NOT NULL, -- e.g., ROLE_MILK_SHOP_OPERATOR, ROLE_SUPER_ADMIN
+    role VARCHAR(50) NOT NULL, 
     is_active BOOLEAN DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE schema_admin.utility_bill (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    utility_type VARCHAR(50) NOT NULL, -- ELECTRICITY, WATER
-    billing_month VARCHAR(7) NOT NULL, -- Format: YYYY-MM
+    utility_type VARCHAR(50) NOT NULL, 
+    billing_month VARCHAR(7) NOT NULL, 
     total_amount DECIMAL(12, 2) NOT NULL,
-    milk_shop_ratio DECIMAL(3, 2) NOT NULL, -- e.g., 0.40
-    room_section_ratio DECIMAL(3, 2) NOT NULL, -- e.g., 0.60
+    milk_shop_ratio DECIMAL(3, 2) NOT NULL,
+    room_section_ratio DECIMAL(3, 2) NOT NULL, 
     recorded_by UUID NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -71,7 +72,7 @@ CREATE TABLE schema_milk_shop.stock_ledger (
     last_updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE schema_milk_shop.purchase_invoice ( -- Represents Goods Received Note (GRN)
+CREATE TABLE schema_milk_shop.purchase_invoice ( 
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     supplier_id UUID NOT NULL REFERENCES schema_milk_shop.supplier(id),
     invoice_number VARCHAR(50),
@@ -128,14 +129,14 @@ CREATE TABLE IF NOT EXISTS schema_milk_shop.stock_adjustment_log (
 -- 3. BEER GARDEN SCHEMA (schema_beer_garden) - FULLY NORMALIZED
 -- ==============================================================================
 
--- 1. Master Item Catalog (Single Source of Truth)
+-- 1. Master Item Catalog
 CREATE TABLE schema_beer_garden.beer_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     item_code VARCHAR(50) UNIQUE NOT NULL,
     beer_name VARCHAR(100) NOT NULL,
     category VARCHAR(50),
-    current_stock INT DEFAULT 0 CHECK (current_stock >= 0),
-    unit_price DECIMAL(10, 2) -- The base selling price
+    current_stock INT NOT NULL DEFAULT 0, 
+    unit_price DECIMAL(12, 2) 
 );
 
 -- 2. Supplier Profiles
@@ -151,48 +152,42 @@ CREATE TABLE schema_beer_garden.suppliers (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
--- 3. Price List (Linked to Item ID, NOT String)
+-- 3. Price List
 CREATE TABLE schema_beer_garden.beer_price_list (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     beer_item_id UUID NOT NULL REFERENCES schema_beer_garden.beer_items(id) ON DELETE CASCADE,
-    unit_price DECIMAL(10, 2) NOT NULL CHECK (unit_price >= 0),
-    effective_date DATE NOT NULL DEFAULT CURRENT_DATE,
-    is_active BOOLEAN DEFAULT TRUE
+    unit_price DECIMAL(12, 2) NOT NULL,
+    effective_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    authorized_by VARCHAR(255) NOT NULL
 );
 
--- 4. GRN Invoice (With Cash/Credit limits built-in)
-CREATE TABLE schema_beer_garden.grn_invoice (
+-- 4. GRN Parent Table
+CREATE TABLE schema_beer_garden.beer_garden_grn (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    supplier_id UUID NOT NULL REFERENCES schema_beer_garden.suppliers(id),
-    invoice_reference VARCHAR(100) NOT NULL,
-    total_amount DECIMAL(12, 2) NOT NULL,
+    grn_number VARCHAR(100),
+    supplier_name VARCHAR(255),
     received_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    payment_method VARCHAR(20) NOT NULL DEFAULT 'CREDIT' CHECK (payment_method IN ('CASH', 'CREDIT')),
+    total_amount DECIMAL(12, 2),
     amount_paid DECIMAL(12, 2) DEFAULT 0.00,
-    payment_status VARCHAR(20) GENERATED ALWAYS AS (
-        CASE 
-            WHEN amount_paid >= total_amount THEN 'PAID'
-            WHEN amount_paid > 0 THEN 'PARTIAL'
-            ELSE 'PENDING'
-        END
-    ) STORED
+    status VARCHAR(50)
 );
 
--- 5. GRN Item (Linked to Item ID, NOT String)
+-- 5. GRN Items
 CREATE TABLE schema_beer_garden.grn_item (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    grn_invoice_id UUID NOT NULL REFERENCES schema_beer_garden.grn_invoice(id) ON DELETE CASCADE,
+    grn_invoice_id UUID NOT NULL REFERENCES schema_beer_garden.beer_garden_grn(id) ON DELETE CASCADE,
     beer_item_id UUID NOT NULL REFERENCES schema_beer_garden.beer_items(id),
     quantity INT NOT NULL CHECK (quantity > 0),
-    unit_cost DECIMAL(10, 2) NOT NULL CHECK (unit_cost >= 0),
+    unit_cost DECIMAL(12, 2) NOT NULL CHECK (unit_cost >= 0),
     line_total DECIMAL(12, 2) NOT NULL
 );
 
--- 6. Supplier Payments Ledger (Accounts Payable)
+-- 6. Supplier Payments Ledger (THE FIX IS HERE)
 CREATE TABLE schema_beer_garden.supplier_payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     supplier_id UUID NOT NULL REFERENCES schema_beer_garden.suppliers(id),
-    grn_invoice_id UUID REFERENCES schema_beer_garden.grn_invoice(id), 
+    -- Fixed: Now correctly points to beer_garden_grn instead of the deleted table
+    grn_invoice_id UUID REFERENCES schema_beer_garden.beer_garden_grn(id), 
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     amount DECIMAL(12, 2) NOT NULL CHECK (amount > 0),
     payment_reference VARCHAR(100)
@@ -204,10 +199,12 @@ CREATE TABLE schema_beer_garden.issuance_invoice (
     invoice_number VARCHAR(50) NOT NULL UNIQUE,
     operator_name VARCHAR(150) NOT NULL,
     issued_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    total_stock_value NUMERIC(12, 2) NOT NULL,
-    total_commission NUMERIC(12, 2) NOT NULL,
-    grand_total NUMERIC(12, 2) NOT NULL,
-    issued_by_role VARCHAR(255) NOT NULL
+    total_stock_value DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    total_commission DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    grand_total DECIMAL(12, 2) NOT NULL DEFAULT 0.00,
+    issued_by_role VARCHAR(255) NOT NULL,
+    status VARCHAR(50),                                  
+    priority_level VARCHAR(50) DEFAULT 'MEDIUM'          
 );
 
 -- 8. Payment Record (For Issuance Invoices)
@@ -215,11 +212,24 @@ CREATE TABLE IF NOT EXISTS schema_beer_garden.payment_record (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id UUID NOT NULL REFERENCES schema_beer_garden.issuance_invoice(id),
     amount_paid DECIMAL(12, 2) NOT NULL,
-    payment_method VARCHAR(20) NOT NULL, -- CASH, CHEQUE
-    reference_number VARCHAR(50), -- Receipt or Cheque No
+    payment_method VARCHAR(20) NOT NULL,
+    reference_number VARCHAR(50), 
     payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- 9. Issuance Item 
+CREATE TABLE schema_beer_garden.issuance_item (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    invoice_id UUID NOT NULL REFERENCES schema_beer_garden.issuance_invoice(id) ON DELETE CASCADE,
+    beer_item_id UUID NOT NULL REFERENCES schema_beer_garden.beer_items(id),
+    quantity INT NOT NULL,
+    unit_price DECIMAL(12, 2) NOT NULL,
+    commission_per_bottle DECIMAL(12, 2) NOT NULL,
+    line_total DECIMAL(12, 2) NOT NULL
+);
+
+-- 10. Performance Index
+CREATE INDEX idx_beer_invoice_status ON schema_beer_garden.issuance_invoice(status);
 -- ==============================================================================
 -- 4. ROOM SECTION SCHEMA (schema_room_section)
 -- ==============================================================================

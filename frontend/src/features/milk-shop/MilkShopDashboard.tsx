@@ -263,7 +263,7 @@ function MilkShopDashboard() {
       helper: "From stock adjustments today",
     },
     {
-      title: "Today Reduced Amount",
+      title: "Today Income",
       value: `Rs. ${formatMoney(todayReducedAmount)}`,
       helper: "Reduced quantity × unit price",
     },

@@ -9,10 +9,13 @@ import com.coop.beer_garden_service.entity.PaymentRecord;
 import com.coop.beer_garden_service.entity.BeerGardenGrn;
 import com.coop.beer_garden_service.entity.GrnItem;
 import com.coop.beer_garden_service.repository.IssuanceInvoiceRepository;
+import com.coop.beer_garden_service.repository.IssuanceItemRepository; // <-- ADDED THIS
 import com.coop.beer_garden_service.repository.PaymentRecordRepository;
 import com.coop.beer_garden_service.repository.BeerGardenGrnRepository;
 import com.coop.beer_garden_service.repository.SupplierRepository;
 import com.coop.beer_garden_service.repository.BeerItemRepository;
+
+import com.coop.beer_garden_service.entity.AuditLog;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -28,8 +31,13 @@ import java.util.stream.Collectors;
 @Service
 public class BeerGardenService {
 
+    private final RestTemplate restTemplate = new RestTemplate();
+
     @Autowired
     private IssuanceInvoiceRepository invoiceRepository;
+
+    @Autowired
+    private IssuanceItemRepository issuanceItemRepository; // <-- ADDED THIS
 
     @Autowired
     private PaymentRecordRepository paymentRepository;
@@ -74,6 +82,7 @@ public class BeerGardenService {
         }).collect(Collectors.toList());
     }
 
+    // --- THE ONLY createIssuance METHOD ---
     @Transactional
     public IssuanceInvoice createIssuance(InvoiceRequest request) {
         BigDecimal totalStockValue = request.getTotalLiquorValue();
@@ -84,6 +93,7 @@ public class BeerGardenService {
         BigDecimal commissionTotal = request.getCommissionPerUnit().multiply(new BigDecimal(totalQuantity));
         BigDecimal grandTotal = totalStockValue.add(commissionTotal);
 
+        // 1. Save the Parent Invoice
         IssuanceInvoice invoice = new IssuanceInvoice();
         invoice.setInvoiceNumber("INV-" + System.currentTimeMillis() % 1000000000);
         invoice.setOperatorName(request.getRestaurantOperatorName());
@@ -94,7 +104,47 @@ public class BeerGardenService {
         invoice.setIssuedByRole("ROLE_ADMIN");
         invoice.setStatus("UNPAID");
 
-        return invoiceRepository.save(invoice);
+        invoice = invoiceRepository.save(invoice);
+
+        // 2. Loop through the cart, DEDUCT STOCK, and save line items
+        for (InvoiceRequest.InvoiceItem itemReq : request.getItems()) {
+
+            // Find the beer using the NAME sent from the frontend
+            com.coop.beer_garden_service.entity.BeerItem beerItem = beerItemRepository.findById(itemReq.getBeerItemId())
+                    .orElseThrow(() -> new RuntimeException("Beer item not found in database for ID: " + itemReq.getBeerItemId()));
+            // Prevent selling negative stock
+            if (beerItem.getCurrentStock() < itemReq.getQuantity()) {
+                throw new RuntimeException("Insufficient stock for " + beerItem.getBeerName() + ". Only " + beerItem.getCurrentStock() + " left.");
+            }
+
+            // DEDUCT THE STOCK
+            beerItem.setCurrentStock(beerItem.getCurrentStock() - itemReq.getQuantity());
+            beerItemRepository.save(beerItem);
+
+            // SAVE THE ITEM TO THE NEW SQL TABLE
+            com.coop.beer_garden_service.entity.IssuanceItem issuanceItem = new com.coop.beer_garden_service.entity.IssuanceItem();
+            issuanceItem.setInvoiceId(invoice.getId());
+            issuanceItem.setBeerItemId(beerItem.getId());
+            issuanceItem.setQuantity(itemReq.getQuantity());
+            issuanceItem.setUnitPrice(beerItem.getUnitPrice());
+            issuanceItem.setCommissionPerBottle(request.getCommissionPerUnit());
+
+            BigDecimal lineTotal = beerItem.getUnitPrice().multiply(new BigDecimal(itemReq.getQuantity()));
+            issuanceItem.setLineTotal(lineTotal);
+
+            // Save the line item record
+            issuanceItemRepository.save(issuanceItem);
+            AuditLog log = AuditLog.builder()
+                    .userId(currentUserUuid)
+                    .serviceName("BEER-GARDEN-SERVICE")
+                    .action("CREATE_ISSUANCE")
+                    .description("Beer issuance to restaurant: " + request.getDetails())
+                    .build();
+
+            restTemplate.postForObject("http://ADMIN-SERVICE/api/v1/admin/logs", log, AuditLog.class);
+        }
+
+        return invoice;
     }
 
     @Transactional

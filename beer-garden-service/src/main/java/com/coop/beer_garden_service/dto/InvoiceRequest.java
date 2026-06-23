@@ -16,7 +16,7 @@ public class InvoiceRequest {
 
     @Data
     public static class InvoiceItem {
-        private String beerName;
+        private UUID beerItemId;
         private Integer quantity;
         private BigDecimal unitPrice;
     }

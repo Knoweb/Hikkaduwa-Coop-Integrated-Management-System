@@ -42,37 +42,51 @@ const ReportsDashboard: React.FC = () => {
     });
     const [endDate, setEndDate] = useState(() => new Date().toISOString().split('T')[0]);
 
-    const fetchData = async () => {
-        try {
-            const [invRes, payRes, grnRes] = await Promise.all([
-                api.get('/api/v1/beer-garden/invoices'),
-                api.get('/api/v1/beer-garden/payments'),
-                api.get('/api/v1/beer-garden/grn-history') // NEW
-            ]);
-            
-            const filteredInvoices = invRes.data.filter((i: any) => {
+   const fetchData = async () => {
+    try {
+        const results = await Promise.allSettled([
+            api.get('/api/v1/beer-garden/invoices'),
+            api.get('/api/v1/beer-garden/payments'),
+            api.get('/api/v1/beer-garden/grn-history')
+        ]);
+
+        // Process Invoices
+        if (results[0].status === 'fulfilled') {
+            const filteredInvoices = results[0].value.data.filter((i: any) => {
                 const date = i.issuedDate.split('T')[0];
                 return date >= startDate && date <= endDate;
             });
-            
-            const filteredPayments = payRes.data.filter((p: any) => {
+            setInvoices(filteredInvoices);
+        } else {
+            console.error("Invoices failed:", results[0].reason);
+        }
+
+        // Process Payments
+        if (results[1].status === 'fulfilled') {
+            const filteredPayments = results[1].value.data.filter((p: any) => {
                 const date = p.paymentDate.split('T')[0];
                 return date >= startDate && date <= endDate;
             });
+            setPayments(filteredPayments);
+        } else {
+            console.error("Payments failed (likely 403):", results[1].reason);
+        }
 
-            // NEW: Filter GRNs
-            const filteredGrns = grnRes.data.filter((g: any) => {
+        // Process GRNs
+        if (results[2].status === 'fulfilled') {
+            const filteredGrns = results[2].value.data.filter((g: any) => {
                 const date = g.receivedDate.split('T')[0];
                 return date >= startDate && date <= endDate;
             });
-
-            setInvoices(filteredInvoices);
-            setPayments(filteredPayments);
-            setGrns(filteredGrns); // NEW
-        } catch (error) {
-            console.error("Failed to load report data", error);
+            setGrns(filteredGrns);
+        } else {
+            console.error("GRNs failed:", results[2].reason);
         }
-    };
+
+    } catch (error) {
+        console.error("Unexpected error in layout pipeline", error);
+    }
+};
 
     useEffect(() => {
         fetchData();
@@ -119,7 +133,7 @@ const ReportsDashboard: React.FC = () => {
                     </Button>
                 </Paper>
 
-                <Tabs value={tabIndex} onChange={(e, val) => setTabIndex(val)} textColor="primary" indicatorColor="primary">
+                <Tabs value={tabIndex} onChange={(_e, val) => setTabIndex(val)} textColor="primary" indicatorColor="primary">
                     <Tab label="Beer Issuance & Commission" />
                     <Tab label="Payment History" />
                     <Tab label="Beer Purchase Account (GRN)" /> 
@@ -143,7 +157,7 @@ const ReportsDashboard: React.FC = () => {
                         <TableCell><b>Invoice No</b></TableCell>
                         <TableCell><b>Operator</b></TableCell>
                         <TableCell align="right"><b>Liquor Value (Rs.)</b></TableCell>
-                        <TableCell align="right"><b>Commission (Rs.)</b></TableCell> {/* Added Header */}
+                        <TableCell align="right"><b>Commission (Rs.)</b></TableCell> 
                         <TableCell align="right"><b>Grand Total (Rs.)</b></TableCell>
                     </TableRow>
                 </TableHead>
@@ -154,7 +168,7 @@ const ReportsDashboard: React.FC = () => {
                             <TableCell>{inv.invoiceNumber}</TableCell>
                             <TableCell>{inv.operatorName}</TableCell>
                             <TableCell align="right">{inv.grandTotal ? (inv.grandTotal - (inv.totalCommission || 0)).toLocaleString() : "0"}</TableCell>
-                            <TableCell align="right" sx={{ color: '#166534' }}>{inv.totalCommission?.toLocaleString()}</TableCell> {/* Added Value */}
+                            <TableCell align="right" sx={{ color: '#166534' }}>{inv.totalCommission?.toLocaleString()}</TableCell>
                             <TableCell align="right">{inv.grandTotal?.toLocaleString()}</TableCell>
                         </TableRow>
                     ))}
