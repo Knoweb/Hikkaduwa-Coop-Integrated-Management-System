@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/milk-shop/stock-adjustments")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class StockAdjustmentController {
 
     private final StockAdjustmentService stockAdjustmentService;

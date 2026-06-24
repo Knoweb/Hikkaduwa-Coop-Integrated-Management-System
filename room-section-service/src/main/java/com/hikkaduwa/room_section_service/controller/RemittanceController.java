@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/rooms")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class RemittanceController {
 
     private final RemittanceService remittanceService;

@@ -13,7 +13,6 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/milk-shop/items")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class ItemProductController {
 
     private final ItemProductService itemProductService;

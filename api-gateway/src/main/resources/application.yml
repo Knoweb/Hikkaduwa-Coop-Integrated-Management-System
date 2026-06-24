@@ -44,6 +44,11 @@ spring:
           predicates:
             - Path=/api/v1/admin/**
 
+        - id: room-section-service
+          uri: lb://ROOM-SECTION-SERVICE
+          predicates:
+            - Path=/api/v1/rooms/**
+
 eureka:
   client:
     service-url:

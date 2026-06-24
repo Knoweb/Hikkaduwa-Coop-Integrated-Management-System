@@ -102,7 +102,7 @@ function OccupancyMatrixPage() {
       setBookings(sortedBookings);
     } catch (err) {
       console.error(err);
-      setError("Failed to load data. Check room-section-service on port 8084.");
+      setError("Failed to load data. Check room-section-service on port 8080.");
     }
   };
 

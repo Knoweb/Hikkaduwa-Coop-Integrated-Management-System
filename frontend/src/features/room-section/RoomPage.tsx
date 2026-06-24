@@ -117,7 +117,7 @@ function RoomPage() {
       await Promise.all([loadRooms(), loadBillingSettings()]);
     } catch (err) {
       console.error(err);
-      setError("Failed to load room data. Check room-section-service on port 8084.");
+      setError("Failed to load room data. Check room-section-service on port 8080.");
     } finally {
       setLoading(false);
     }

@@ -12,7 +12,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/v1/milk-shop/sales")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "*")
 public class DailySalesController {
 
     private final DailySalesService dailySalesService;
