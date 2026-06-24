@@ -11,11 +11,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: maven
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
+          
+      - name: Build All Microservices
+        run: |
+          for dir in admin-service api-gateway auth-service beer-garden-service discovery-server milk-shop-service room-section-service; do
+            echo "========================================="
+            echo "Building $dir..."
+            echo "========================================="
+            cd $dir
+            mvn clean package -DskipTests
+            cd ..
+          done
