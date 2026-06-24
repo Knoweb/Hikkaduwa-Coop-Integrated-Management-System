@@ -493,7 +493,7 @@ function RoomDashboardPage() {
           <Paper
             sx={{
               mt: 4,
-              p: 3,
+              p: 0.5,
               borderRadius: 2,
               boxShadow: "0 4px 6px -1px rgb(0 0 0 / 0.1)",
               width: "100%",
