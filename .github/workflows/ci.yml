@@ -19,6 +19,6 @@ jobs:
           cache: maven
       - name: Build with Maven
         run: |
-          for pom in $(find . -name pom.xml | sort); do
+          while IFS= read -r -d '' pom; do
             mvn -f "$pom" clean package -DskipTests
-          done
+          done < <(find . -mindepth 2 -maxdepth 2 -name pom.xml -print0 | sort -z)
