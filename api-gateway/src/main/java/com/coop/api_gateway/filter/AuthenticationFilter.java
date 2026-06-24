@@ -20,7 +20,6 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     private JwtUtil jwtUtil;
 
     public static class Config {
-        // Configuration properties can go here
     }
 
     public AuthenticationFilter() {
@@ -30,34 +29,29 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
     @Override
     public GatewayFilter apply(Config config) {
         return ((exchange, chain) -> {
+            if ("OPTIONS".equalsIgnoreCase(exchange.getRequest().getMethod().name())) {
+                return chain.filter(exchange);
+            }
+
             if (validator.isSecured.test(exchange.getRequest())) {
-
-                if (!exchange.getRequest().getHeaders().containsKey(HttpHeaders.AUTHORIZATION)) {
-                    return onError(exchange, "Missing authorization header", HttpStatus.UNAUTHORIZED);
-                }
-
+                
                 String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
-
                 if (authHeader == null || !authHeader.startsWith("Bearer ")) {
                     return onError(exchange, "Invalid Authorization header", HttpStatus.UNAUTHORIZED);
                 }
 
                 String token = authHeader.substring(7).trim();
-
-                System.out.println("DEBUG: Validating token starting with: " + token.substring(0, 10));
-
                 try {
                     jwtUtil.validateToken(token);
                     String role = jwtUtil.extractRole(token);
                     String path = exchange.getRequest().getURI().getPath();
 
+                    // 2. path එක පටන් ගන්නේ /api/v1/ වලින් නම් ඒකත් සැලකිල්ලට ගන්න
                     if (!hasAccess(path, role)) {
-                        return onError(exchange, "403 FORBIDDEN: Access Denied", HttpStatus.FORBIDDEN);
+                        return onError(exchange, "FORBIDDEN: Access Denied", HttpStatus.FORBIDDEN);
                     }
-
                 } catch (Exception e) {
-                    System.err.println("DEBUG: Token validation failed: " + e.getClass().getName() + " - " + e.getMessage());
-                    return onError(exchange, "Unauthorized: " + e.getMessage(), HttpStatus.FORBIDDEN);
+                    return onError(exchange, "Unauthorized", HttpStatus.UNAUTHORIZED);
                 }
             }
             return chain.filter(exchange);
@@ -66,11 +60,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
     private boolean hasAccess(String path, String role) {
         if ("ROLE_ADMIN".equals(role)) return true;
-        if (path.startsWith("/auth/secure-test")) return true;
 
-        if (path.startsWith("/milk-shop") && "ROLE_MILK_SHOP".equals(role)) return true;
-        if (path.startsWith("/beer-garden") && "ROLE_BEER_GARDEN".equals(role)) return true;
-        if (path.startsWith("/room-section") && "ROLE_ROOM_SECTION".equals(role)) return true;
+        if (path.contains("/beer-garden") && "ROLE_BEER_GARDEN".equals(role)) return true;
+        if (path.contains("/milk-shop") && "ROLE_MILK_SHOP".equals(role)) return true;
+        if (path.contains("/room-section") && "ROLE_ROOM_SECTION".equals(role)) return true;
+        
         return false;
     }
 

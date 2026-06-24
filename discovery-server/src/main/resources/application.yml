@@ -3,8 +3,11 @@ server:
 
 eureka:
   instance:
-    hostname: localhost
+    # Bulletproof config: Defaults to localhost for local IDE development.
+    # Docker Compose will override this with EUREKA_HOSTNAME=discovery-server.
+    hostname: ${EUREKA_HOSTNAME:localhost}
   client:
+    # The server itself should not register with another Eureka server
     register-with-eureka: false
     fetch-registry: false
     service-url:

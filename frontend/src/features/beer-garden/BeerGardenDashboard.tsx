@@ -1,7 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { 
-    Box, Typography, Grid, Card, CardContent, CircularProgress, Chip, Paper, 
-    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment 
+    Box, Typography, Grid, Card, CardContent,  Chip, Paper, 
+    Table, TableBody, TableCell, TableContainer, TableHead, TableRow, TextField, InputAdornment,
+    CircularProgress // <-- Added this import
 } from '@mui/material'; 
 import SearchIcon from '@mui/icons-material/Search';
 import api from '../../api/axiosConfig';
@@ -49,6 +50,15 @@ const BeerGardenDashboard: React.FC = () => {
     const totalExposure = invoices.reduce((sum, inv) => sum + (inv.status !== 'PAID' ? inv.grandTotal : 0), 0);
     const totalOverdue = invoices.filter(inv => inv.overdue).length;
 
+    // <-- Added this block to use the 'loading' variable -->
+    if (loading) {
+        return (
+            <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '100vh' }}>
+                <CircularProgress />
+            </Box>
+        );
+    }
+
     return (
         <Box sx={{ p: 3, bgcolor: '#f8fafc', minHeight: '100vh' }}>
             <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#451a03', mb: 4 }}>
@@ -86,12 +96,14 @@ const BeerGardenDashboard: React.FC = () => {
                     placeholder="Search by operator..." 
                     size="small"
                     variant="outlined"
-                    InputProps={{ 
-                        startAdornment: (
-                            <InputAdornment position="start">
-                                <SearchIcon sx={{ color: 'gray' }} />
-                            </InputAdornment>
-                        ) 
+                    slotProps={{ 
+                        input: {
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <SearchIcon sx={{ color: 'gray' }} />
+                                </InputAdornment>
+                            )
+                        }
                     }}
                     onChange={(e) => setSearchTerm(e.target.value)}
                 />

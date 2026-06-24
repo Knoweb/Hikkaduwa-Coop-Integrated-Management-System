@@ -1,11 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Box, Typography, Grid, Paper, Card, CardContent, Divider, 
-    List, ListItem, ListItemText, ListItemAvatar, Avatar, CircularProgress 
+    Box, Typography, Grid, Paper, Card, CardContent, Divider, Avatar, CircularProgress 
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import ReceiptIcon from '@mui/icons-material/Receipt';
-import SecurityIcon from '@mui/icons-material/Security';
 import DnsIcon from '@mui/icons-material/Dns';
 import api from '../../api/axiosConfig';
 

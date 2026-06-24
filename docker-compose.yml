@@ -1,4 +1,3 @@
-
 services:
   postgres-db:
     image: postgres:16-alpine
@@ -9,23 +8,148 @@ services:
       POSTGRES_PASSWORD: root
       POSTGRES_DB: coop_db
     ports:
-      - "5433:5432" 
+      - "5433:5432"
     volumes:
       - ./coop.sql:/docker-entrypoint-initdb.d/init.sql
     networks:
       - coop-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d coop_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
-  pgadmin:
-    image: dpage/pgadmin4
-    container_name: coop_pgadmin
-    restart: always
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@coop.com
-      PGADMIN_DEFAULT_PASSWORD: root
+  discovery-server:
+    build: ./discovery-server
+    container_name: coop_discovery
     ports:
-      - "5050:80" # Access pgAdmin via localhost:5050
+      - "8761:8761"
+    environment:
+      - EUREKA_HOSTNAME=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+    networks:
+      - coop-network
+
+  api-gateway:
+    build: ./api-gateway
+    container_name: coop_gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - EUREKA_HOST=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+      - SPRING_CLOUD_GATEWAY_GLOBALCORS_CORS_CONFIGURATIONS_[/**]_ALLOWEDORIGINS=http://localhost:3000
     depends_on:
-      - postgres-db
+      discovery-server:
+        condition: service_started
+    networks:
+      - coop-network
+
+  auth-service:
+    build: ./auth-service
+    container_name: coop_auth
+    expose:
+      - "9000"
+    environment:
+      - SERVER_PORT=9000
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - EUREKA_HOST=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - coop-network
+
+  admin-service:
+    build: ./admin-service
+    container_name: coop_admin
+    expose:
+      - "9001"
+    environment:
+      - SERVER_PORT=9001
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - EUREKA_HOST=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - coop-network
+
+  beer-garden-service:
+    build: ./beer-garden-service
+    container_name: coop_beer_garden
+    expose:
+      - "9004"
+    environment:
+      - SERVER_PORT=9004
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - EUREKA_HOST=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - coop-network
+
+  milk-shop-service:
+    build: ./milk-shop-service
+    container_name: coop_milk_shop
+    expose:
+      - "9002"
+    environment:
+      - SERVER_PORT=9002
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - EUREKA_HOST=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - coop-network
+
+  room-section-service:
+    build: ./room-section-service
+    container_name: coop_room_section
+    expose:
+      - "9003"
+    environment:
+      - SERVER_PORT=9003
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - EUREKA_HOST=discovery-server
+      - JAVA_TOOL_OPTIONS=-Xms256m -Xmx256m
+    depends_on:
+      discovery-server:
+        condition: service_started
+      postgres-db:
+        condition: service_healthy
+    networks:
+      - coop-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        - VITE_API_BASE_URL=http://localhost:8080
+    container_name: coop_frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
     networks:
       - coop-network
 

@@ -4,8 +4,16 @@ server:
 spring:
   application:
     name: auth-service
+  spring:
+  cloud:
+    gateway:
+      routes:
+        - id: milk-shop-service
+          uri: lb://MILK-SHOP-SERVICE
+          predicates:
+            - Path=/api/v1/milk-shop/**
   datasource:
-    url: jdbc:postgresql://localhost:5433/coop_db?currentSchema=schema_admin
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/coop_db?currentSchema=schema_admin
     username: postgres
     password: root
     driver-class-name: org.postgresql.Driver
@@ -24,4 +32,5 @@ eureka:
     fetch-registry: true
     register-with-eureka: true
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      # Defaults to localhost for local dev. Docker Compose will inject EUREKA_HOST=discovery-server.
+      defaultZone: http://discovery-server:8761/eureka/

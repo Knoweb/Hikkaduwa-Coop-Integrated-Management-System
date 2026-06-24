@@ -1,25 +1,13 @@
-import axios, { type InternalAxiosRequestConfig } from 'axios';
+import axios from 'axios';
 
-// Create a centralized instance pointing to your API Gateway
 const api = axios.create({
-    baseURL: 'http://localhost:8080', 
+    // Bulletproof logic: Use the environment variable if it exists, 
+    // otherwise fallback to localhost for local development without Docker.
+    baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+    withCredentials: true,
     headers: {
-        'Content-Type': 'application/json'
-    }
-});
-
-// Request Interceptor: Attach the JWT to every outgoing request
-api.interceptors.request.use(
-    (config: InternalAxiosRequestConfig) => {
-        const token = localStorage.getItem('jwt_token');
-        if (token && config.headers) {
-            config.headers.Authorization = `Bearer ${token}`;
-        }
-        return config;
+        'Content-Type': 'application/json',
     },
-    (error: any) => {
-        return Promise.reject(error);
-    }
-);
+});
 
 export default api;

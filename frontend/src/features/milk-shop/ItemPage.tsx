@@ -33,7 +33,8 @@ type ItemProduct = {
   isActive?: boolean;
 };
 
-const categories = [
+// 1. Updated categories with "Other"
+const CATEGORY_OPTIONS = [
   "Milk",
   "Yoghurt",
   "Curd",
@@ -53,15 +54,19 @@ const formatMoney = (value: number | string | undefined) => {
 function ItemPage() {
   const [items, setItems] = useState<ItemProduct[]>([]);
 
+  // States for Create Form
   const [name, setName] = useState("");
-  const [category, setCategory] = useState("Milk");
+  const [selectedCategory, setSelectedCategory] = useState("Milk");
+  const [customCategory, setCustomCategory] = useState(""); // State for custom category
   const [reorderLevel, setReorderLevel] = useState("");
   const [unitPrice, setUnitPrice] = useState("");
 
+  // States for Edit Form
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [editingItemId, setEditingItemId] = useState("");
   const [editName, setEditName] = useState("");
-  const [editCategory, setEditCategory] = useState("Milk");
+  const [editSelectedCategory, setEditSelectedCategory] = useState("Milk");
+  const [editCustomCategory, setEditCustomCategory] = useState(""); // Custom category for edit
   const [editReorderLevel, setEditReorderLevel] = useState("");
   const [editUnitPrice, setEditUnitPrice] = useState("");
 
@@ -86,7 +91,7 @@ function ItemPage() {
       setItems(sortedData);
     } catch (err) {
       console.error(err);
-      setError("Failed to load items. Check milk-shop-service on port 8082.");
+      setError("Failed to load items. Check milk-shop-service on port 8080.");
     } finally {
       setLoading(false);
     }
@@ -96,11 +101,15 @@ function ItemPage() {
     loadItems();
   }, []);
 
+  // --- Create Item Logic ---
   const handleCreateItem = async (event: SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
-    if (!name || !category || !reorderLevel || !unitPrice) {
-      setError("Please fill all item details.");
+    // Determine the final category
+    const finalCategory = selectedCategory === "Other" ? customCategory : selectedCategory;
+
+    if (!name || !finalCategory.trim() || !reorderLevel || !unitPrice) {
+      setError("Please fill all item details, including category.");
       return;
     }
 
@@ -112,7 +121,7 @@ function ItemPage() {
         },
         body: JSON.stringify({
           name,
-          category,
+          category: finalCategory, // Sending the final category
           reorderLevel: Number(reorderLevel),
           unitPrice: Number(unitPrice),
         }),
@@ -122,8 +131,10 @@ function ItemPage() {
         throw new Error("Item create failed");
       }
 
+      // Reset form
       setName("");
-      setCategory("Milk");
+      setSelectedCategory("Milk");
+      setCustomCategory("");
       setReorderLevel("");
       setUnitPrice("");
 
@@ -136,10 +147,22 @@ function ItemPage() {
     }
   };
 
+  // --- Edit Item Logic ---
   const openEditDialog = (item: ItemProduct) => {
     setEditingItemId(item.id);
     setEditName(item.name);
-    setEditCategory(item.category);
+    
+    // Check if the item's category is in our standard list
+    const isStandardCategory = CATEGORY_OPTIONS.includes(item.category) && item.category !== "Other";
+    
+    if (isStandardCategory) {
+      setEditSelectedCategory(item.category);
+      setEditCustomCategory("");
+    } else {
+      setEditSelectedCategory("Other");
+      setEditCustomCategory(item.category);
+    }
+
     setEditReorderLevel(String(item.reorderLevel));
     setEditUnitPrice(String(item.unitPrice));
     setEditDialogOpen(true);
@@ -149,13 +172,16 @@ function ItemPage() {
     setEditDialogOpen(false);
     setEditingItemId("");
     setEditName("");
-    setEditCategory("Milk");
+    setEditSelectedCategory("Milk");
+    setEditCustomCategory("");
     setEditReorderLevel("");
     setEditUnitPrice("");
   };
 
   const handleUpdateItem = async () => {
-    if (!editingItemId || !editName || !editCategory || !editReorderLevel || !editUnitPrice) {
+    const finalEditCategory = editSelectedCategory === "Other" ? editCustomCategory : editSelectedCategory;
+
+    if (!editingItemId || !editName || !finalEditCategory.trim() || !editReorderLevel || !editUnitPrice) {
       setError("Please fill all item details.");
       return;
     }
@@ -170,7 +196,7 @@ function ItemPage() {
           },
           body: JSON.stringify({
             name: editName,
-            category: editCategory,
+            category: finalEditCategory, // Sending the updated category
             reorderLevel: Number(editReorderLevel),
             unitPrice: Number(editUnitPrice),
           }),
@@ -201,6 +227,7 @@ function ItemPage() {
         Add, view, and update Milk Shop items. Stock quantity will be updated later through GRN and sales.
       </Typography>
 
+      {/* --- ADD NEW ITEM CARD --- */}
       <Card
         sx={{
           mt: 3,
@@ -210,7 +237,7 @@ function ItemPage() {
         }}
       >
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
+          <Typography variant="h5" sx={{ fontWeight: "bold" }} gutterBottom>
             Add New Item
           </Typography>
 
@@ -237,19 +264,38 @@ function ItemPage() {
                 placeholder="Example: Fresh Milk 1L"
               />
 
-              <TextField
-                select
-                label="Category"
-                fullWidth
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                {categories.map((itemCategory) => (
-                  <MenuItem key={itemCategory} value={itemCategory}>
-                    {itemCategory}
-                  </MenuItem>
-                ))}
-              </TextField>
+              {/* Dynamic Category Dropdown */}
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+                <TextField
+                  select
+                  label="Category"
+                  fullWidth
+                  value={selectedCategory}
+                  onChange={(e) => {
+                    setSelectedCategory(e.target.value);
+                    if (e.target.value !== "Other") {
+                      setCustomCategory("");
+                    }
+                  }}
+                >
+                  {CATEGORY_OPTIONS.map((itemCategory) => (
+                    <MenuItem key={itemCategory} value={itemCategory}>
+                      {itemCategory}
+                    </MenuItem>
+                  ))}
+                </TextField>
+
+                {/* Show custom category text field only if "Other" is selected */}
+                {selectedCategory === "Other" && (
+                  <TextField
+                    label="Enter New Category"
+                    fullWidth
+                    value={customCategory}
+                    onChange={(e) => setCustomCategory(e.target.value)}
+                    placeholder="Example: Dairy Drink"
+                  />
+                )}
+              </Box>
 
               <TextField
                 label="Unit Price"
@@ -288,8 +334,9 @@ function ItemPage() {
         </CardContent>
       </Card>
 
+      {/* --- ITEM LIST PAPER --- */}
       <Paper sx={{ mt: 3, p: 2 }}>
-        <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
+        <Typography variant="h5" sx={{ fontWeight: "bold" }} gutterBottom>
           Item List
         </Typography>
 
@@ -312,14 +359,12 @@ function ItemPage() {
               <TableBody>
                 {items.map((item) => (
                   <TableRow key={item.id}>
-                    {/* 1. Item Name: Bold and Dark to anchor the row */}
                     <TableCell sx={{ fontWeight: "bold", color: "#111827" }}>
                       {item.name}
                     </TableCell>
                     
                     <TableCell>{item.category}</TableCell>
                     
-                    {/* 2. Unit Price: Bold and slightly larger to emphasize the number */}
                     <TableCell sx={{ fontWeight: "bold", fontSize: "1rem" }}>
                       Rs. {formatMoney(item.unitPrice)}
                     </TableCell>
@@ -358,6 +403,7 @@ function ItemPage() {
         )}
       </Paper>
 
+      {/* --- EDIT DIALOG --- */}
       <Dialog
         open={editDialogOpen}
         onClose={closeEditDialog}
@@ -375,19 +421,35 @@ function ItemPage() {
               onChange={(e) => setEditName(e.target.value)}
             />
 
-            <TextField
-              select
-              label="Category"
-              fullWidth
-              value={editCategory}
-              onChange={(e) => setEditCategory(e.target.value)}
-            >
-              {categories.map((itemCategory) => (
-                <MenuItem key={itemCategory} value={itemCategory}>
-                  {itemCategory}
-                </MenuItem>
-              ))}
-            </TextField>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <TextField
+                select
+                label="Category"
+                fullWidth
+                value={editSelectedCategory}
+                onChange={(e) => {
+                  setEditSelectedCategory(e.target.value);
+                  if (e.target.value !== "Other") {
+                    setEditCustomCategory("");
+                  }
+                }}
+              >
+                {CATEGORY_OPTIONS.map((itemCategory) => (
+                  <MenuItem key={itemCategory} value={itemCategory}>
+                    {itemCategory}
+                  </MenuItem>
+                ))}
+              </TextField>
+
+              {editSelectedCategory === "Other" && (
+                <TextField
+                  label="Enter Custom Category"
+                  fullWidth
+                  value={editCustomCategory}
+                  onChange={(e) => setEditCustomCategory(e.target.value)}
+                />
+              )}
+            </Box>
 
             <TextField
               label="Unit Price"
@@ -409,13 +471,13 @@ function ItemPage() {
 
         <DialogActions>
           <Button onClick={closeEditDialog}>Cancel</Button>
-
           <Button variant="contained" onClick={handleUpdateItem}>
             Save Changes
           </Button>
         </DialogActions>
       </Dialog>
 
+      {/* --- SNACKBARS --- */}
       <Snackbar
         open={!!message}
         autoHideDuration={3000}

@@ -294,5 +294,6 @@ CREATE TABLE schema_room_section.daily_remittance (
 -- INDEXING FOR PERFORMANCE
 -- ==============================================================================
 CREATE INDEX idx_milk_sales_date ON schema_milk_shop.daily_sales(sales_date);
+DROP INDEX IF EXISTS schema_beer_garden.idx_beer_invoice_status;
 CREATE INDEX idx_beer_invoice_status ON schema_beer_garden.issuance_invoice(status);
 CREATE INDEX idx_room_booking_dates ON schema_room_section.guest_booking(check_in, check_out);

@@ -65,7 +65,7 @@ function SupplierPage() {
       setSuppliers(sortedData);
     } catch (err) {
       console.error(err);
-      setError("Failed to load suppliers. Check milk-shop-service on port 8082.");
+      setError("Failed to load suppliers. Check milk-shop-service on port 8080.");
     } finally {
       setLoading(false);
     }

@@ -6,8 +6,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class MilkShopServiceApplication {
 
-	public static void main(String[] args) {
-		SpringApplication.run(MilkShopServiceApplication.class, args);
-	}
+    public static void main(String[] args) {
+        SpringApplication.run(MilkShopServiceApplication.class, args);
+    }
 
 }

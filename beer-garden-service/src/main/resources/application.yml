@@ -1,17 +1,19 @@
 server:
-  port: 9001
+  port: 9004
 
 spring:
   application:
     name: beer-garden-service
   datasource:
-    url: jdbc:postgresql://localhost:5433/coop_db?currentSchema=schema_beer_garden
+    # Bulletproof config: Defaults to localhost:5433 for local IDE development.
+    # Docker Compose will override these with DB_HOST=postgres-db and DB_PORT=5432.
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5433}/coop_db?currentSchema=schema_beer_garden
     username: postgres
     password: root
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: update # (Pro-tip: Once your coop.sql is fully finalized, change this to 'validate')
     show-sql: true
 
 logging:
@@ -22,6 +24,7 @@ logging:
 eureka:
   client:
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      # Defaults to localhost for local dev. Docker Compose will inject EUREKA_HOST=discovery-server.
+      defaultZone: http://${EUREKA_HOST:localhost}:8761/eureka/
   instance:
     prefer-ip-address: true
