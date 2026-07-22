@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { 
-    Box, Typography, Grid, Paper, Card, CardContent, Divider, Avatar, CircularProgress 
+    Box, Typography, Grid, Paper, Card, CardContent, Avatar, CircularProgress, Chip, Stack
 } from '@mui/material';
 import PeopleIcon from '@mui/icons-material/People';
 import ReceiptIcon from '@mui/icons-material/Receipt';
 import DnsIcon from '@mui/icons-material/Dns';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
 import api from '../../api/axiosConfig';
 
 interface DashboardStats {
@@ -58,137 +59,164 @@ const AdminDashboard: React.FC = () => {
         );
     }
 
+    const summaryCards = [
+        {
+            title: 'TOTAL USERS',
+            value: stats?.totalUsers || 0,
+            subtitle: `${stats?.activeUsers || 0} Active`,
+            icon: <PeopleIcon fontSize="large" />,
+            bgColor: '#eff6ff',
+            iconColor: '#3b82f6',
+        },
+        {
+            title: 'UTILITY BILLS',
+            value: stats?.totalUtilityBills || 0,
+            subtitle: 'Recorded Months',
+            icon: <ReceiptIcon fontSize="large" />,
+            bgColor: '#f0fdf4',
+            iconColor: '#22c55e',
+        },
+        {
+            title: 'MICROSERVICES',
+            value: 6,
+            subtitle: 'All Systems Online',
+            icon: <DnsIcon fontSize="large" />,
+            bgColor: '#f8fafc',
+            iconColor: '#0f172a',
+        },
+        {
+            title: 'ACTIVE MODULES',
+            value: 4,
+            subtitle: 'Operational Departments',
+            icon: <ViewModuleIcon fontSize="large" />,
+            bgColor: '#fff7ed',
+            iconColor: '#f97316',
+        }
+    ];
+
+    const systemInfo = [
+        { label: 'API Gateway Status', value: 'Connected (Port 8080)' },
+        { label: 'Eureka Server Status', value: 'Online (Port 8761)' },
+        { label: 'PostgreSQL Database Status', value: 'Connected' },
+        { label: 'Docker Environment', value: 'Running' },
+        { label: 'Frontend Status', value: 'Active' },
+    ];
+
+    const serviceHealth = [
+        { name: 'API Gateway', status: 'Online' },
+        { name: 'Auth Service', status: 'Online' },
+        { name: 'Admin Service', status: 'Running' },
+        { name: 'Milk Shop Service', status: 'Running' },
+        { name: 'Room Section Service', status: 'Online' },
+        { name: 'Beer Garden Service', status: 'Online' },
+    ];
+
     return (
-        <Box sx={{ p: 3, maxWidth: 1200, mx: 'auto' }}>
-            <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 1, color: '#1e293b' }}>
-                Global Command Center
-            </Typography>
-            <Typography variant="body1" sx={{ color: '#64748b', mb: 4 }}>
-                System overview and real-time operational metrics.
-            </Typography>
+        <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 1400, mx: 'auto' }}>
+            {/* Header Area */}
+            <Box sx={{ display: 'flex', flexDirection: { xs: 'column', md: 'row' }, justifyContent: 'space-between', alignItems: { xs: 'flex-start', md: 'center' }, mb: 4, gap: 2 }}>
+                <Box>
+                    <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 4, color: '#1e293b' }}>
+                        Global Command Center
+                    </Typography>
+                    <Typography variant="body1" sx={{ color: '#64748b' }}>
+                        System overview and operational control dashboard.
+                    </Typography>
+                </Box>
+            </Box>
 
-            {/* TOP ROW: KPI CARDS */}
+            {/* Summary Cards */}
             <Grid container spacing={3} sx={{ mb: 4 }}>
-                <Grid size={{ xs: 12, sm:6,md:3 }}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                            <Avatar sx={{ bgcolor: '#eff6ff', color: '#3b82f6', width: 56, height: 56, mr: 2 }}>
-                                <PeopleIcon fontSize="large" />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>TOTAL USERS</Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{stats?.totalUsers || 0}</Typography>
-                                <Typography variant="caption" color="success.main">{stats?.activeUsers || 0} Active</Typography>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                {/* <Grid size={{ xs: 12, sm:6,md:3 }}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                            <Avatar sx={{ bgcolor: '#fef2f2', color: '#ef4444', width: 56, height: 56, mr: 2 }}>
-                                <SecurityIcon fontSize="large" />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>SECURITY EVENTS</Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{stats?.totalLogs || 0}</Typography>
-                                <Typography variant="caption" color="text.secondary">Logged Actions</Typography>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid> */}
-
-                <Grid size={{ xs: 12, sm:6,md:3 }}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                            <Avatar sx={{ bgcolor: '#f0fdf4', color: '#22c55e', width: 56, height: 56, mr: 2 }}>
-                                <ReceiptIcon fontSize="large" />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>UTILITY BILLS</Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>{stats?.totalUtilityBills || 0}</Typography>
-                                <Typography variant="caption" color="text.secondary">Recorded Months</Typography>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
-
-                <Grid size={{ xs: 12, sm:6,md:3 }}>
-                    <Card sx={{ borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
-                        <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
-                            <Avatar sx={{ bgcolor: '#f8fafc', color: '#0f172a', width: 56, height: 56, mr: 2 }}>
-                                <DnsIcon fontSize="large" />
-                            </Avatar>
-                            <Box>
-                                <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 'bold' }}>MICROSERVICES</Typography>
-                                <Typography variant="h4" sx={{ fontWeight: 'bold' }}>5</Typography>
-                                <Typography variant="caption" color="success.main">All Systems Online</Typography>
-                            </Box>
-                        </CardContent>
-                    </Card>
-                </Grid>
+                {summaryCards.map((card, index) => (
+                    <Grid size={{ xs: 12, sm: 6, md: 3 }} key={index}>
+                        <Card sx={{ 
+                            height: '100%', 
+                            borderRadius: 3, 
+                            boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            justifyContent: 'center'
+                        }}>
+                            <CardContent sx={{ display: 'flex', alignItems: 'center', p: 3 }}>
+                                <Avatar sx={{ bgcolor: card.bgColor, color: card.iconColor, width: 60, height: 60, mr: 2.5 }}>
+                                    {card.icon}
+                                </Avatar>
+                                <Box>
+                                    <Typography variant="overline" sx={{ fontWeight: 700, color: '#64748b', lineHeight: 1.2, display: 'block', mb: 0.5 }}>
+                                        {card.title}
+                                    </Typography>
+                                    <Typography variant="h4" sx={{ fontWeight: 800, color: '#0f172a', mb: 0.25 }}>
+                                        {card.value}
+                                    </Typography>
+                                    <Typography variant="caption" sx={{ color: '#64748b', fontWeight: 500 }}>
+                                        {card.subtitle}
+                                    </Typography>
+                                </Box>
+                            </CardContent>
+                        </Card>
+                    </Grid>
+                ))}
             </Grid>
 
-            {/* BOTTOM ROW: RECENT ACTIVITY & SYSTEM INFO */}
+            {/* Additional Content & System Info */}
             <Grid container spacing={3}>
-                {/* <Grid size={{ xs: 12, md:8 }}>
-                    <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', height: '100%' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>Recent Security Logs</Typography>
-                        <Divider sx={{ mb: 2 }} />
-                        <List>
-                            {stats?.recentLogs.length === 0 ? (
-                                <Typography color="text.secondary">No recent activity detected.</Typography>
-                            ) : (
-                                stats?.recentLogs.map((log) => (
-                                    <React.Fragment key={log.id}>
-                                        <ListItem alignItems="flex-start" sx={{ px: 0 }}>
-                                            <ListItemAvatar>
-                                                <Avatar sx={{ bgcolor: '#1e293b', width: 32, height: 32 }}>
-                                                    <SecurityIcon fontSize="small" />
-                                                </Avatar>
-                                            </ListItemAvatar>
-                                            <ListItemText
-                                                primary={<Typography sx={{ fontWeight: 'bold' }}>{log.action}</Typography>}
-                                                secondary={
-                                                    <React.Fragment>
-                                                        <Typography component="span" variant="body2" color="text.primary">
-                                                            {log.serviceName}
-                                                        </Typography>
-                                                        {" — " + log.description + " (" + new Date(log.createdAt).toLocaleString() + ")"}
-                                                    </React.Fragment>
-                                                }
-                                            />
-                                        </ListItem>
-                                        <Divider component="li" />
-                                    </React.Fragment>
-                                ))
-                            )}
-                        </List>
+                <Grid size={{ xs: 12, md: 8 }}>
+                    <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)', height: '100%' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: '#1e293b', mb: 3 }}>
+                            Service Health Overview
+                        </Typography>
+                        <Grid container spacing={2}>
+                            {serviceHealth.map((service, idx) => (
+                                <Grid size={{ xs: 12, sm: 6 }} key={idx}>
+                                    <Box sx={{ 
+                                        p: 2, 
+                                        borderRadius: 2, 
+                                        border: '1px solid #e2e8f0', 
+                                        display: 'flex', 
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        bgcolor: '#f8fafc'
+                                    }}>
+                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#334155' }}>
+                                            {service.name}
+                                        </Typography>
+                                        <Chip 
+                                            label={service.status} 
+                                            size="small"
+                                            sx={{ 
+                                                bgcolor: '#dcfce7', 
+                                                color: '#166534', 
+                                                fontWeight: 700,
+                                                fontSize: '0.75rem'
+                                            }} 
+                                        />
+                                    </Box>
+                                </Grid>
+                            ))}
+                        </Grid>
                     </Paper>
-                </Grid> */}
+                </Grid>
 
-                <Grid size={{ xs: 12, md:4 }}>
-                    <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)', height: '100%', bgcolor: '#0f172a', color: 'white' }}>
-                        <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>System Information</Typography>
-                        <Divider sx={{ mb: 2, borderColor: '#334155' }} />
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>API GATEWAY STATUS</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4ade80' }}>Connected & Routing (Port 8080)</Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>SERVICE REGISTRY</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4ade80' }}>Eureka Server Online (Port 8761)</Typography>
-                        </Box>
-                        <Box sx={{ mb: 2 }}>
-                            <Typography variant="caption" sx={{ color: '#94a3b8' }}>DATABASE CLUSTER</Typography>
-                            <Typography variant="body1" sx={{ fontWeight: 'bold', color: '#4ade80' }}>PostgreSQL 16 via Docker</Typography>
-                        </Box>
-                        <Box sx={{ mt: 4, p: 2, bgcolor: '#1e293b', borderRadius: 2 }}>
-                            <Typography variant="body2" sx={{ color: '#cbd5e1' }}>
-                                Welcome to the Hikkaduwa Co-op Global Administration Panel. Use the sidebar to provision new users, allocate utility ratios, or audit system activity.
-                            </Typography>
-                        </Box>
+                <Grid size={{ xs: 12, md: 4 }}>
+                    <Paper sx={{ p: 3, borderRadius: 3, boxShadow: '0 4px 20px -2px rgba(0,0,0,0.05)', height: '100%', bgcolor: '#0f172a', color: 'white' }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, mb: 3, color: '#f8fafc' }}>
+                            System Information
+                        </Typography>
+                        <Stack spacing={2.5}>
+                            {systemInfo.map((info, idx) => (
+                                <Box key={idx}>
+                                    <Typography variant="caption" sx={{ color: '#94a3b8', fontWeight: 600, display: 'block', mb: 0.5, textTransform: 'uppercase' }}>
+                                        {info.label}
+                                    </Typography>
+                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                                        <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: '#4ade80' }} />
+                                        <Typography variant="body2" sx={{ fontWeight: 600, color: '#e2e8f0' }}>
+                                            {info.value}
+                                        </Typography>
+                                    </Box>
+                                </Box>
+                            ))}
+                        </Stack>
                     </Paper>
                 </Grid>
             </Grid>

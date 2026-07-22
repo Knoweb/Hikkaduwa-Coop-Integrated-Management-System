@@ -153,10 +153,22 @@ function GrnPage() {
     setGrns(sortedData);
   };
 
+  const loadNextInvoiceNumber = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URLS.milkShop}/grn/next-invoice-number`);
+      if (response.ok) {
+        const data = await response.json();
+        setInvoiceNumber(data.invoiceNumber);
+      }
+    } catch (err) {
+      console.error("Failed to load next invoice number", err);
+    }
+  };
+
   const loadPageData = async () => {
     try {
       setLoading(true);
-      await Promise.all([loadSuppliers(), loadItems(), loadGrns()]);
+      await Promise.all([loadSuppliers(), loadItems(), loadGrns(), loadNextInvoiceNumber()]);
     } catch (err) {
       console.error(err);
       setError("Failed to load GRN data. Check milk-shop-service.");
@@ -224,7 +236,6 @@ function GrnPage() {
 
   const resetForm = () => {
     setSupplierId("");
-    setInvoiceNumber("");
     setInvoiceDate(getTodayDate());
     setRemarks("");
     setLineItems([
@@ -234,11 +245,17 @@ function GrnPage() {
         unitPrice: "",
       },
     ]);
+    loadNextInvoiceNumber();
   };
 
   const validateForm = () => {
     if (!supplierId) {
       setError("Please select a supplier.");
+      return false;
+    }
+
+    if (!invoiceNumber || invoiceNumber.trim() === "") {
+      setError("Invoice number is required.");
       return false;
     }
 

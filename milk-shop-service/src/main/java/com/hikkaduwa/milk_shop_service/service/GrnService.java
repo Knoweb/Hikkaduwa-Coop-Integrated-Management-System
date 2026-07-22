@@ -17,8 +17,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -34,11 +37,20 @@ public class GrnService {
         Supplier supplier = supplierRepository.findById(request.getSupplierId())
                 .orElseThrow(() -> new RuntimeException("Supplier not found"));
 
+        String invoiceNumber = request.getInvoiceNumber();
+        if (invoiceNumber == null || invoiceNumber.trim().isEmpty()) {
+            invoiceNumber = generateNextInvoiceNumber();
+        } else {
+            if (purchaseInvoiceRepository.existsByInvoiceNumber(invoiceNumber)) {
+                throw new RuntimeException("Invoice number already exists: " + invoiceNumber);
+            }
+        }
+
         BigDecimal totalAmount = calculateTotalAmount(request.getItems());
 
         PurchaseInvoice purchaseInvoice = PurchaseInvoice.builder()
                 .supplier(supplier)
-                .invoiceNumber(request.getInvoiceNumber())
+                .invoiceNumber(invoiceNumber)
                 .invoiceDate(request.getInvoiceDate())
                 .totalAmount(totalAmount)
                 .remarks(request.getRemarks())
@@ -82,6 +94,27 @@ public class GrnService {
                 .map(item -> item.getUnitPrice()
                         .multiply(BigDecimal.valueOf(item.getQuantity())))
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    public String generateNextInvoiceNumber() {
+        String datePart = LocalDate.now().format(DateTimeFormatter.ofPattern("yyyyMMdd"));
+        String prefix = "GRN-" + datePart + "-";
+
+        Optional<PurchaseInvoice> lastInvoiceOpt = purchaseInvoiceRepository
+                .findFirstByInvoiceNumberStartingWithOrderByInvoiceNumberDesc(prefix);
+
+        if (lastInvoiceOpt.isPresent() && lastInvoiceOpt.get().getInvoiceNumber() != null) {
+            String lastInvoiceNumber = lastInvoiceOpt.get().getInvoiceNumber();
+            String numberPart = lastInvoiceNumber.replace(prefix, "");
+            try {
+                int lastNumber = Integer.parseInt(numberPart);
+                return prefix + String.format("%03d", lastNumber + 1);
+            } catch (NumberFormatException e) {
+                return prefix + "001";
+            }
+        }
+
+        return prefix + "001";
     }
 
     private void increaseStock(ItemProduct item, Integer quantity) {
