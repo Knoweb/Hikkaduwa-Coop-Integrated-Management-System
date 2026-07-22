@@ -49,7 +49,6 @@ type Props = {
 
 const adjustmentTypes = [
   "Daily Sales Reduction",
-  "Opening Stock",
   "Stock Count Correction",
 ];
 
@@ -442,8 +441,7 @@ function Form({ stockLedgers, onSuccess, onError, reloadData }: Props) {
           </Paper>
 
           <Typography color="text.secondary" sx={{ mt: 2 }}>
-            For first time stock, choose <strong>Opening Stock</strong>. For
-            daily manager checking, choose{" "}
+            For daily manager checking, choose{" "}
             <strong>Daily Sales Reduction</strong> or{" "}
             <strong>Stock Count Correction</strong>.
           </Typography>
