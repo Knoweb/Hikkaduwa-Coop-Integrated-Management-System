@@ -10,12 +10,14 @@ function AdminLayout() {
 
   const userRole = localStorage.getItem("user_role");
 
-  // ONLY ADMIN MENUS
+  // ADMIN MENUS WITH CROSS-MODULE NAVIGATION
   const menuItems = [
     { label: "Global Dashboard", path: "/admin/dashboard" },
+    { label: "Milk Shop", path: "/milk-shop/dashboard" },
+    { label: "Room Section", path: "/rooms/dashboard" },
+    { label: "Beer Garden", path: "/beer-garden/dashboard" },
     { label: "Utility Allocations", path: "/admin/utilities" },
     { label: "User Management", path: "/admin/users" },
-    // { label: "System Audit Logs", path: "/admin/logs" },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);

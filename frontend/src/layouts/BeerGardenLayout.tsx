@@ -77,6 +77,18 @@ function BeerGardenLayout() {
             {userRole === 'ROLE_ADMIN' ? 'Beer Garden Admin Panel' : 'Beer Garden Management Panel'}
           </Typography>
 
+          {userRole === 'ROLE_ADMIN' && (
+            <Button
+              variant="contained"
+              size="small"
+              fullWidth
+              onClick={() => navigate('/admin/dashboard')}
+              sx={{ backgroundColor: '#f97316', mt: 1, '&:hover': { backgroundColor: '#ea580c' }, mb: 1 }}
+            >
+              Back to Admin Panel
+            </Button>
+          )}
+
           <Button 
             variant="outlined" 
             size="small" 

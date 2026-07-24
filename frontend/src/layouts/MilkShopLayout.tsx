@@ -16,6 +16,8 @@ function MilkShopLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  const userRole = localStorage.getItem("user_role");
+
   const menuItems = [
     {
       label: "Dashboard",
@@ -134,6 +136,18 @@ function MilkShopLayout() {
           <Typography variant="caption" sx={{ color: "#fed7aa" }}>
             Milk Shop Panel
           </Typography>
+
+          {userRole === 'ROLE_ADMIN' && (
+            <Button
+              variant="contained"
+              size="small"
+              fullWidth
+              onClick={() => navigate('/admin/dashboard')}
+              sx={{ backgroundColor: '#f97316', mt: 1, '&:hover': { backgroundColor: '#ea580c' } }}
+            >
+              Back to Admin Panel
+            </Button>
+          )}
 
             <Button 
               variant="outlined" 
