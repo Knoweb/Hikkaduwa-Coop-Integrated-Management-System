@@ -18,6 +18,7 @@ function AdminLayout() {
     { label: "Beer Garden", path: "/beer-garden/dashboard" },
     { label: "Utility Allocations", path: "/admin/utilities" },
     { label: "User Management", path: "/admin/users" },
+    { label: "Observations", path: "/admin/observations" },
   ];
 
   const isActive = (path: string) => location.pathname.startsWith(path);

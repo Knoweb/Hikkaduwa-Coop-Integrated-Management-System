@@ -1,5 +1,7 @@
 import api from "../api/axiosConfig";
 
+export const TOKEN_KEY = "jwt_token";
+
 export interface AuthResponse {
   token: string;
   role: string;
@@ -65,8 +67,6 @@ export const loginUser = async (
   username: string,
   password: string
 ): Promise<AuthResponse> => {
-  console.log("DEBUG: Sending request with:", { username, password });
-
   try {
     const response = await api.post<string>("/auth/token", {
       username,
@@ -81,7 +81,7 @@ export const loginUser = async (
 
     const actualRole = extractRoleFromToken(token);
 
-    localStorage.setItem("jwt_token", token);
+    localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem("user_role", actualRole);
     localStorage.setItem("username", username);
 
@@ -97,7 +97,7 @@ export const loginUser = async (
 };
 
 export const logoutUser = (): void => {
-  localStorage.removeItem("jwt_token");
+  localStorage.removeItem(TOKEN_KEY);
   localStorage.removeItem("user_role");
   localStorage.removeItem("username");
 };

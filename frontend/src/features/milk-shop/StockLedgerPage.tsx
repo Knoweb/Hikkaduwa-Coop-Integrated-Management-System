@@ -1,3 +1,4 @@
+import api from '../../api/axiosConfig';
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -18,6 +19,7 @@ import {
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type ChipColor =
   | "default"
@@ -70,17 +72,17 @@ function StockLedgerPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const loadStockLedgers = async () => {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_BASE_URLS.milkShop}/stock`);
+      const response = await api.get(`${API_BASE_URLS.milkShop}/stock`);
 
-      if (!response.ok) {
-        throw new Error("Failed to load stock ledger");
-      }
+      
 
-      const data: StockLedger[] = await response.json();
+      const data: StockLedger[] = response.data;
 
       const sortedData = data.sort((a, b) =>
         a.item.name.localeCompare(b.item.name)
@@ -205,7 +207,7 @@ function StockLedgerPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        View current stock levels, low-stock items, and out-of-stock items.
+        {canMutateBusinessData ? "View current stock levels, low-stock items, and out-of-stock items." : "View current stock levels."}
       </Typography>
 
       <Box

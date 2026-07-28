@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Alert, Box, Snackbar, Typography } from "@mui/material";
 import { API_BASE_URLS } from "../../../api/apiConfig";
+import api from "../../../api/axiosConfig";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 import SummaryCards from "./components/SummaryCards";
 import Form from "./components/Form";
@@ -58,35 +60,27 @@ function StockAdjustmentPage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const loadData = async () => {
     try {
       setLoading(true);
 
-      const stockResponse = await fetch(`${API_BASE_URLS.milkShop}/stock`);
-
-      if (!stockResponse.ok) {
-        throw new Error("Failed to load stock");
+      let sortedStock: StockLedger[] = [];
+      
+      if (canMutateBusinessData) {
+        const stockResponse = await api.get<StockLedger[]>(`${API_BASE_URLS.milkShop}/stock`);
+        sortedStock = stockResponse.data.sort((a, b) =>
+          a.item.name.localeCompare(b.item.name)
+        );
       }
 
-      const stockData: StockLedger[] = await stockResponse.json();
-
-      const sortedStock = stockData.sort((a, b) =>
-        a.item.name.localeCompare(b.item.name)
-      );
-
-      const adjustmentResponse = await fetch(
+      const adjustmentResponse = await api.get<StockAdjustment[]>(
         `${API_BASE_URLS.milkShop}/stock-adjustments`
       );
 
-      if (!adjustmentResponse.ok) {
-        throw new Error("Failed to load stock adjustments");
-      }
-
-      const adjustmentData: StockAdjustment[] =
-        await adjustmentResponse.json();
-
       setStockLedgers(sortedStock);
-      setAdjustments(adjustmentData);
+      setAdjustments(adjustmentResponse.data);
     } catch (err) {
       console.error(err);
       setError("Failed to load stock adjustment data.");
@@ -114,8 +108,7 @@ function StockAdjustmentPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Add opening stock, record daily manager stock reductions, and view daily
-        stock adjustment history.
+        {canMutateBusinessData ? "Add opening stock, record daily manager stock reductions, and view daily stock adjustment history." : "View daily stock adjustment history."}
       </Typography>
 
       <SummaryCards
@@ -123,12 +116,14 @@ function StockAdjustmentPage() {
         selectedDate={selectedDate}
       />
 
+      {canMutateBusinessData && (
       <Form
         stockLedgers={stockLedgers}
         onSuccess={setMessage}
         onError={setError}
         reloadData={loadData}
       />
+      )}
 
       <HistooryTable
         adjustments={selectedDateAdjustments}

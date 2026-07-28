@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { usePermissions } from '../../hooks/usePermissions';
 import { 
     Box, Typography, Paper, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, 
     TextField, MenuItem, Grid, Chip 
@@ -16,6 +17,7 @@ interface AuditLogResponse {
 
 const SystemAuditLogs: React.FC = () => {
     const [logs, setLogs] = useState<AuditLogResponse[]>([]);
+  const { canMutateBusinessData } = usePermissions();
     const [filterService, setFilterService] = useState('ALL');
     const [filterDate, setFilterDate] = useState('');
 

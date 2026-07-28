@@ -1,3 +1,5 @@
+import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useEffect, useState } from "react";
 import {
   Alert,
@@ -115,6 +117,8 @@ function MilkShopDashboard() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const todayDate = getTodayDate();
 
   const loadDashboardData = async () => {
@@ -129,29 +133,28 @@ function MilkShopDashboard() {
         salesResponse,
         adjustmentResponse,
       ] = await Promise.all([
-        fetch(`${API_BASE_URLS.milkShop}/suppliers`),
-        fetch(`${API_BASE_URLS.milkShop}/items`),
-        fetch(`${API_BASE_URLS.milkShop}/stock`),
-        fetch(`${API_BASE_URLS.milkShop}/grn`),
-        fetch(`${API_BASE_URLS.milkShop}/sales`),
-        fetch(`${API_BASE_URLS.milkShop}/stock-adjustments`),
+        api.get(`${API_BASE_URLS.milkShop}/suppliers`),
+        api.get(`${API_BASE_URLS.milkShop}/items`),
+        api.get(`${API_BASE_URLS.milkShop}/stock`),
+        api.get(`${API_BASE_URLS.milkShop}/grn`),
+        api.get(`${API_BASE_URLS.milkShop}/sales`),
+        api.get(`${API_BASE_URLS.milkShop}/stock-adjustments`),
       ]);
 
-      if (!suppliersResponse.ok) throw new Error("Failed to load suppliers");
-      if (!itemsResponse.ok) throw new Error("Failed to load items");
-      if (!stockResponse.ok) throw new Error("Failed to load stock");
-      if (!grnResponse.ok) throw new Error("Failed to load GRN records");
-      if (!salesResponse.ok) throw new Error("Failed to load daily sales");
-      if (!adjustmentResponse.ok)
-        throw new Error("Failed to load stock adjustments");
+      
+      
+      
+      
+      
+      
 
-      const suppliersData: Supplier[] = await suppliersResponse.json();
-      const itemsData: ItemProduct[] = await itemsResponse.json();
-      const stockData: StockLedger[] = await stockResponse.json();
-      const grnData: GrnResponse[] = await grnResponse.json();
-      const salesData: DailySales[] = await salesResponse.json();
+      const suppliersData: Supplier[] = suppliersResponse.data;
+      const itemsData: ItemProduct[] = itemsResponse.data;
+      const stockData: StockLedger[] = stockResponse.data;
+      const grnData: GrnResponse[] = grnResponse.data;
+      const salesData: DailySales[] = salesResponse.data;
       const adjustmentData: StockAdjustment[] =
-        await adjustmentResponse.json();
+        adjustmentResponse.data;
 
       setSuppliers(suppliersData);
       setItems(itemsData);

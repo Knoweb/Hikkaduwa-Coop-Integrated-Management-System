@@ -44,12 +44,22 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
                 try {
                     jwtUtil.validateToken(token);
                     String role = jwtUtil.extractRole(token);
+                    String username = jwtUtil.extractUsername(token);
                     String path = exchange.getRequest().getURI().getPath();
 
-                    // 2. path එක පටන් ගන්නේ /api/v1/ වලින් නම් ඒකත් සැලකිල්ලට ගන්න
                     if (!hasAccess(path, role)) {
                         return onError(exchange, "FORBIDDEN: Access Denied", HttpStatus.FORBIDDEN);
                     }
+
+                    // Mutate the request to pass headers downstream
+                    ServerWebExchange mutatedExchange = exchange.mutate()
+                        .request(exchange.getRequest().mutate()
+                            .header("X-User-Role", role)
+                            .header("X-User-Name", username)
+                            .build())
+                        .build();
+
+                    return chain.filter(mutatedExchange);
                 } catch (Exception e) {
                     return onError(exchange, "Unauthorized", HttpStatus.UNAUTHORIZED);
                 }
@@ -60,10 +70,11 @@ public class AuthenticationFilter extends AbstractGatewayFilterFactory<Authentic
 
     private boolean hasAccess(String path, String role) {
         if ("ROLE_ADMIN".equals(role)) return true;
+        if ("ROLE_AUDITOR".equals(role)) return true;
 
         if (path.contains("/beer-garden") && "ROLE_BEER_GARDEN".equals(role)) return true;
         if (path.contains("/milk-shop") && "ROLE_MILK_SHOP".equals(role)) return true;
-        if (path.contains("/room-section") && "ROLE_ROOM_SECTION".equals(role)) return true;
+        if (path.contains("/room-section") && ("ROLE_ROOM_SECTION".equals(role) || "ROLE_ROOM_BOOKING".equals(role))) return true;
         
         return false;
     }

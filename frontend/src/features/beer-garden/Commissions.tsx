@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Box, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Chip } from '@mui/material';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface Issuance {
     id: string;
@@ -13,6 +14,7 @@ interface Issuance {
 
 const Commissions: React.FC = () => {
     const [data, setData] = useState<Issuance[]>([]);
+  const { canMutateBusinessData } = usePermissions();
 
     useEffect(() => {
         const fetchReceivables = async () => {

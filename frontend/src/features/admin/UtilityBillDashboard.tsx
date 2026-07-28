@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { usePermissions } from '../../hooks/usePermissions';
 import { 
     Box, Typography, Button, TextField, MenuItem, Grid, Paper, 
     Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Alert 
@@ -30,6 +31,8 @@ const UtilityBillDashboard: React.FC = () => {
     const [bills, setBills] = useState<UtilityBillResponse[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
+
+    const { canMutateBusinessData } = usePermissions();
 
     // Fetch existing bills on load
     const fetchBills = async () => {
@@ -106,6 +109,7 @@ const UtilityBillDashboard: React.FC = () => {
 
             <Grid container spacing={4}>
                 {/* LEFT COLUMN: Entry Form */}
+                {canMutateBusinessData && (
                 <Grid size={{ xs: 12, md:4 }}>
                     <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
                         <Typography variant="h6" sx={{ mb: 3, fontWeight: 'bold' }}>Record New Bill</Typography>
@@ -186,9 +190,10 @@ const UtilityBillDashboard: React.FC = () => {
                         </form>
                     </Paper>
                 </Grid>
+                )}
 
                 {/* RIGHT COLUMN: Historical Ledger */}
-                <Grid size={{ xs: 12, md: 8 }}>
+                <Grid size={{ xs: 12, md: !canMutateBusinessData ? 12 : 8 }}>
                     <Paper sx={{ borderRadius: 2, overflow: 'hidden', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}>
                         <TableContainer sx={{ maxHeight: 600 }}>
                             <Table stickyHeader>

@@ -14,6 +14,7 @@ import {
   Typography,
 } from "@mui/material";
 import type { Booking, MoneyValue } from "../BookingPage";
+import { usePermissions } from "../../../hooks/usePermissions";
 
 type ChipColor =
   | "default"
@@ -73,14 +74,15 @@ const getStatusColor = (status: string): ChipColor => {
   return "warning";
 };
 
-function BookingList({
+const BookingList = ({
   bookings,
   loading,
   onInvoice,
   onCancel,
   onCheckout,
   onFullPaymentReceived,
-}: Props) {
+}: Props) => {
+  const { canMutateBusinessData } = usePermissions();
   const [selectedMonth, setSelectedMonth] = useState(getCurrentMonthValue());
   const [guestSearch, setGuestSearch] = useState("");
 
@@ -305,7 +307,7 @@ function BookingList({
                             Invoice
                           </Button>
 
-                          {booking.status !== "CANCELLED" &&
+                          {canMutateBusinessData && booking.status !== "CANCELLED" &&
                             booking.paymentStatus !== "PAID" && (
                               <Button
                                 variant="contained"
@@ -326,7 +328,7 @@ function BookingList({
                               </Button>
                             )}
 
-                          {booking.status === "ACTIVE" && (
+                          {canMutateBusinessData && booking.status === "ACTIVE" && (
                             <>
                               <Button
                                 variant="outlined"

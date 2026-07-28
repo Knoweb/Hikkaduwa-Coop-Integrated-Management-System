@@ -1,3 +1,5 @@
+import api from '../../../../api/axiosConfig';
+import { usePermissions } from '../../../../hooks/usePermissions';
 import { useEffect, useState } from "react";
 import type { SyntheticEvent } from "react";
 import {
@@ -70,6 +72,7 @@ const createDefaultRow = (): AdjustmentRow => {
 
 function Form({ stockLedgers, onSuccess, onError, reloadData }: Props) {
   const [adjustmentDate, setAdjustmentDate] = useState(getTodayDate());
+  const { canMutateBusinessData } = usePermissions();
   const [reason, setReason] = useState("Daily manager stock count");
   const [remarks, setRemarks] = useState("");
   const [rows, setRows] = useState<Record<string, AdjustmentRow>>({});
@@ -212,25 +215,17 @@ function Form({ stockLedgers, onSuccess, onError, reloadData }: Props) {
         filledRows.map((ledger) => {
           const row = rows[ledger.item.id];
 
-          return fetch(`${API_BASE_URLS.milkShop}/stock-adjustments`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
+          return api.post(`${API_BASE_URLS.milkShop}/stock-adjustments`, {
               itemId: ledger.item.id,
               adjustmentType: row.adjustmentType,
               quantity: Number(row.quantity),
               reason,
               remarks,
               adjustmentDate,
-            }),
           }).then((response) => {
-            if (!response.ok) {
-              throw new Error(`Failed to save ${ledger.item.name}`);
-            }
+            
 
-            return response.json();
+            return response.data;
           });
         })
       );
@@ -311,9 +306,11 @@ function Form({ stockLedgers, onSuccess, onError, reloadData }: Props) {
               mb: 2,
             }}
           >
-            <Button type="submit" variant="contained" disabled={saving}>
+            {canMutateBusinessData && (
+<Button type="submit" variant="contained" disabled={saving}>
               {saving ? "Saving..." : "Save Adjustments"}
             </Button>
+)}
           </Box>
 
           <Paper variant="outlined" sx={{ overflowX: "auto" }}>

@@ -1,10 +1,13 @@
 import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
+import { TOKEN_KEY } from "./services/authService";
 
 // --- Layouts ---
 import AdminLayout from "./layouts/AdminLayout";
 import RoomLayout from "./layouts/RoomLayout";
 import MilkShopLayout from "./layouts/MilkShopLayout";
 import BeerGardenLayout from "./layouts/BeerGardenLayout";
+import AuditorLayout from "./layouts/AuditorLayout";
 
 // --- Pages ---
 import Login from "./features/auth/Login";
@@ -27,6 +30,9 @@ import StockLedgerPage from "./features/milk-shop/StockLedgerPage";
 import DailySalesPage from "./features/milk-shop/DailySalesPage";
 import StockAdjustmentPage from "./features/milk-shop/stock-adjustments/StockAdjustmentPage";
 
+import AuditObservations from "./features/auditor/AuditObservations";
+import AuditorDashboard from "./features/auditor/AuditorDashboard";
+
 import BeerGardenDashboard from "./features/beer-garden/BeerGardenDashboard";
 import PriceMatrix from "./features/beer-garden/PriceMatrix";
 import LiquorIssuance from "./features/beer-garden/LiquorIssuance";
@@ -37,41 +43,46 @@ import Receivables from "./features/beer-garden/ReceivablesDashboard";
 import ReportsDashboard from "./features/beer-garden/ReportsDashboard";
 import PurchaseHistory from "./features/beer-garden/PurchaseHistory";
 
-// --- UPGRADED: Role-Based Protected Route ---
+// --- Role-Based Protected Route (uses AuthContext) ---
 const ProtectedRoute = ({ allowedRoles }: { allowedRoles: string[] }) => {
-  const token = localStorage.getItem('jwt_token');
-  const userRole = localStorage.getItem('user_role');
+  const { user } = useAuth();
+  const token = localStorage.getItem(TOKEN_KEY);
 
   if (!token) {
     return <Navigate to="/login" replace />;
   }
 
-  if (userRole && !allowedRoles.includes(userRole)) {
-    console.warn(`Security Event: Role ${userRole} attempted unauthorized access.`);
-    return <Navigate to="/" replace />; 
+  const role = user?.role ?? localStorage.getItem('user_role');
+  if (role && !allowedRoles.includes(role)) {
+    console.warn(`Security Event: Role ${role} attempted unauthorized access.`);
+    return <Navigate to="/" replace />;
   }
 
   return <Outlet />;
 };
 
 const RootBoundary = () => {
-  const token = localStorage.getItem('jwt_token');
-  const role = localStorage.getItem('user_role'); 
-  
+  const { user } = useAuth();
+  const token = localStorage.getItem(TOKEN_KEY);
+
   if (!token) return <Navigate to="/login" replace />;
 
+  const role = user?.role ?? localStorage.getItem('user_role');
+
   switch (role) {
-    case 'ROLE_ADMIN': 
-        return <Navigate to="/admin/dashboard" replace />;
-    case 'ROLE_MILK_SHOP': 
-        return <Navigate to="/milk-shop/dashboard" replace />;
-    case 'ROLE_BEER_GARDEN': 
-        return <Navigate to="/beer-garden/dashboard" replace />;
-    case 'ROLE_ROOM_BOOKING': 
-        return <Navigate to="/rooms/dashboard" replace />;
-    default: 
-        localStorage.clear();
-        return <Navigate to="/login" replace />;
+    case 'ROLE_ADMIN':
+      return <Navigate to="/admin/dashboard" replace />;
+    case 'ROLE_MILK_SHOP':
+      return <Navigate to="/milk-shop/dashboard" replace />;
+    case 'ROLE_BEER_GARDEN':
+      return <Navigate to="/beer-garden/dashboard" replace />;
+    case 'ROLE_ROOM_BOOKING':
+      return <Navigate to="/rooms/dashboard" replace />;
+    case 'ROLE_AUDITOR':
+      return <Navigate to="/auditor/dashboard" replace />;
+    default:
+      localStorage.clear();
+      return <Navigate to="/login" replace />;
   }
 };
 
@@ -86,8 +97,9 @@ function App() {
             <Route index element={<Navigate to="dashboard" replace />} />
             <Route path="dashboard" element={<AdminDashboard />} />
             <Route path="utilities" element={<UtilityBillDashboard />} />
-            <Route path="users" element={<UserManagementDashboard />} /> 
+            <Route path="users" element={<UserManagementDashboard />} />
             <Route path="logs" element={<SystemAuditLogs />} />
+            <Route path="observations" element={<AuditObservations />} />
           </Route>
         </Route>
 
@@ -127,6 +139,47 @@ function App() {
             <Route path="receivables" element={<Receivables />} />
             <Route path="reports" element={<ReportsDashboard />} />
             <Route path="purchase-history" element={<PurchaseHistory />} />
+          </Route>
+        </Route>
+
+        <Route element={<ProtectedRoute allowedRoles={['ROLE_AUDITOR']} />}>
+          <Route path="/auditor" element={<AuditorLayout />}>
+            <Route index element={<Navigate to="dashboard" replace />} />
+            <Route path="dashboard" element={<AuditorDashboard />} />
+            <Route path="observations" element={<AuditObservations />} />
+
+            {/* Admin sub-routes */}
+            <Route path="admin/dashboard" element={<AdminDashboard />} />
+            <Route path="admin/utilities" element={<UtilityBillDashboard />} />
+            <Route path="admin/users" element={<UserManagementDashboard />} />
+            <Route path="admin/logs" element={<SystemAuditLogs />} />
+
+            {/* Milk Shop sub-routes */}
+            <Route path="milk-shop/dashboard" element={<MilkShopDashboard />} />
+            <Route path="milk-shop/suppliers" element={<SupplierPage />} />
+            <Route path="milk-shop/items" element={<ItemPage />} />
+            <Route path="milk-shop/grn" element={<GrnPage />} />
+            <Route path="milk-shop/stock" element={<StockLedgerPage />} />
+            <Route path="milk-shop/stock-adjustments" element={<StockAdjustmentPage />} />
+            <Route path="milk-shop/daily-sales" element={<DailySalesPage />} />
+
+            {/* Room Section sub-routes */}
+            <Route path="rooms/dashboard" element={<RoomDashboardPage />} />
+            <Route path="rooms/list" element={<RoomPage />} />
+            <Route path="rooms/bookings" element={<BookingPage />} />
+            <Route path="rooms/occupancy" element={<OccupancyMatrixPage />} />
+            <Route path="rooms/remittance" element={<RemittancePage />} />
+
+            {/* Beer Garden sub-routes */}
+            <Route path="beer-garden/dashboard" element={<BeerGardenDashboard />} />
+            <Route path="beer-garden/suppliers" element={<SupplierManagement />} />
+            <Route path="beer-garden/grn" element={<GoodsReceivedNote />} />
+            <Route path="beer-garden/issuance" element={<LiquorIssuance />} />
+            <Route path="beer-garden/prices" element={<PriceMatrix />} />
+            <Route path="beer-garden/commissions" element={<Commissions />} />
+            <Route path="beer-garden/receivables" element={<Receivables />} />
+            <Route path="beer-garden/purchase-history" element={<PurchaseHistory />} />
+            <Route path="beer-garden/reports" element={<ReportsDashboard />} />
           </Route>
         </Route>
 

@@ -20,7 +20,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type Supplier = {
   id: string;
@@ -30,6 +32,7 @@ type Supplier = {
 };
 
 function SupplierPage() {
+  const { canMutateBusinessData } = usePermissions();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
 
   const [supplierName, setSupplierName] = useState("");
@@ -50,13 +53,8 @@ function SupplierPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_BASE_URLS.milkShop}/suppliers`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load suppliers");
-      }
-
-      const data: Supplier[] = await response.json();
+      const response = await api.get<Supplier[]>(`${API_BASE_URLS.milkShop}/suppliers`);
+      const data = response.data;
 
       const sortedData = data.sort((a, b) =>
         a.name.localeCompare(b.name)
@@ -86,21 +84,11 @@ function SupplierPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URLS.milkShop}/suppliers`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: supplierName,
-          contactNumber,
-          address,
-        }),
+      await api.post(`${API_BASE_URLS.milkShop}/suppliers`, {
+        name: supplierName,
+        contactNumber,
+        address,
       });
-
-      if (!response.ok) {
-        throw new Error("Supplier create failed");
-      }
 
       setSupplierName("");
       setContactNumber("");
@@ -138,24 +126,11 @@ function SupplierPage() {
     }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URLS.milkShop}/suppliers/${editingSupplierId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: editSupplierName,
-            contactNumber: editContactNumber,
-            address: editAddress,
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Supplier update failed");
-      }
+      await api.put(`${API_BASE_URLS.milkShop}/suppliers/${editingSupplierId}`, {
+        name: editSupplierName,
+        contactNumber: editContactNumber,
+        address: editAddress,
+      });
 
       closeEditDialog();
       await loadSuppliers();
@@ -174,9 +149,12 @@ function SupplierPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Add, view, and update Milk Shop suppliers.
+        {canMutateBusinessData
+          ? "Add, view, and update Milk Shop suppliers."
+          : "View Milk Shop suppliers."}
       </Typography>
 
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -255,6 +233,7 @@ function SupplierPage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
       <Paper sx={{ mt: 3, p: 2 }}>
         <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
@@ -271,7 +250,7 @@ function SupplierPage() {
                   <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Supplier Name</TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Contact Number</TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Address</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Edit</TableCell>
+                  {canMutateBusinessData && <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Edit</TableCell>}
                 </TableRow>
               </TableHead>
 
@@ -286,6 +265,7 @@ function SupplierPage() {
                     
                     <TableCell>{supplier.contactNumber}</TableCell>
                     <TableCell>{supplier.address || "-"}</TableCell>
+                    {canMutateBusinessData && (
                     <TableCell>
                       <Button
                         variant="contained"
@@ -295,6 +275,7 @@ function SupplierPage() {
                         Edit
                       </Button>
                     </TableCell>
+                    )}
                   </TableRow>
                 ))}
 
@@ -311,6 +292,7 @@ function SupplierPage() {
         )}
       </Paper>
 
+      {canMutateBusinessData && (
       <Dialog
         open={editDialogOpen}
         onClose={closeEditDialog}
@@ -354,6 +336,7 @@ function SupplierPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       <Snackbar
         open={!!message}

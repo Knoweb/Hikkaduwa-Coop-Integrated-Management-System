@@ -25,7 +25,9 @@ import {
 } from "@mui/material";
 import DeleteIcon from "@mui/icons-material/Delete";
 import AddIcon from "@mui/icons-material/Add";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type Supplier = {
   id: string;
@@ -92,6 +94,7 @@ const getMonthName = (date: Date) => {
 };
 
 function GrnPage() {
+  const { canMutateBusinessData } = usePermissions();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [items, setItems] = useState<ItemProduct[]>([]);
   const [grns, setGrns] = useState<GrnResponse[]>([]);
@@ -119,31 +122,22 @@ function GrnPage() {
   const [error, setError] = useState("");
 
   const loadSuppliers = async () => {
-    const response = await fetch(`${API_BASE_URLS.milkShop}/suppliers`);
-    if (!response.ok) {
-      throw new Error("Failed to load suppliers");
-    }
-    const data: Supplier[] = await response.json();
+    const response = await api.get<Supplier[]>(`${API_BASE_URLS.milkShop}/suppliers`);
+    const data = response.data;
     const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
     setSuppliers(sortedData);
   };
 
   const loadItems = async () => {
-    const response = await fetch(`${API_BASE_URLS.milkShop}/items`);
-    if (!response.ok) {
-      throw new Error("Failed to load items");
-    }
-    const data: ItemProduct[] = await response.json();
+    const response = await api.get<ItemProduct[]>(`${API_BASE_URLS.milkShop}/items`);
+    const data = response.data;
     const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
     setItems(sortedData);
   };
 
   const loadGrns = async () => {
-    const response = await fetch(`${API_BASE_URLS.milkShop}/grn`);
-    if (!response.ok) {
-      throw new Error("Failed to load GRNs");
-    }
-    const data: GrnResponse[] = await response.json();
+    const response = await api.get<GrnResponse[]>(`${API_BASE_URLS.milkShop}/grn`);
+    const data = response.data;
     
     // Sort GRNs so newest is at the top
     const sortedData = data.sort((a, b) => {
@@ -155,11 +149,8 @@ function GrnPage() {
 
   const loadNextInvoiceNumber = async () => {
     try {
-      const response = await fetch(`${API_BASE_URLS.milkShop}/grn/next-invoice-number`);
-      if (response.ok) {
-        const data = await response.json();
-        setInvoiceNumber(data.invoiceNumber);
-      }
+      const response = await api.get<{ invoiceNumber: string }>(`${API_BASE_URLS.milkShop}/grn/next-invoice-number`);
+      setInvoiceNumber(response.data.invoiceNumber);
     } catch (err) {
       console.error("Failed to load next invoice number", err);
     }
@@ -168,7 +159,11 @@ function GrnPage() {
   const loadPageData = async () => {
     try {
       setLoading(true);
-      await Promise.all([loadSuppliers(), loadItems(), loadGrns(), loadNextInvoiceNumber()]);
+      if (canMutateBusinessData) {
+        await Promise.all([loadSuppliers(), loadItems(), loadGrns(), loadNextInvoiceNumber()]);
+      } else {
+        await loadGrns();
+      }
     } catch (err) {
       console.error(err);
       setError("Failed to load GRN data. Check milk-shop-service.");
@@ -290,27 +285,17 @@ function GrnPage() {
     if (!validateForm()) return;
 
     try {
-      const response = await fetch(`${API_BASE_URLS.milkShop}/grn`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          supplierId,
-          invoiceNumber,
-          invoiceDate,
-          remarks,
-          items: lineItems.map((item) => ({
-            itemId: item.itemId,
-            quantity: Number(item.quantity),
-            unitPrice: Number(item.unitPrice),
-          })),
-        }),
+      await api.post(`${API_BASE_URLS.milkShop}/grn`, {
+        supplierId,
+        invoiceNumber,
+        invoiceDate,
+        remarks,
+        items: lineItems.map((item) => ({
+          itemId: item.itemId,
+          quantity: Number(item.quantity),
+          unitPrice: Number(item.unitPrice),
+        })),
       });
-
-      if (!response.ok) {
-        throw new Error("GRN create failed");
-      }
 
       resetForm();
       await loadPageData();
@@ -350,9 +335,12 @@ function GrnPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Record supplier purchase invoices and automatically increase item stock.
+        {canMutateBusinessData
+          ? "Record supplier purchase invoices and automatically increase item stock."
+          : "View Milk Shop purchase invoice and GRN history."}
       </Typography>
 
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -550,6 +538,7 @@ function GrnPage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
       <Paper sx={{ mt: 4, p: 2 }}>
         <Box

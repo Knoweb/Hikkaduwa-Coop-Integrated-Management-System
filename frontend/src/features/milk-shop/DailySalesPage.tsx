@@ -17,7 +17,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type ChipColor =
   | "default"
@@ -76,6 +78,7 @@ const formatMoney = (value: MoneyValue) => {
 };
 
 function DailySalesPage() {
+  const { canMutateBusinessData } = usePermissions();
   const [dailySalesList, setDailySalesList] = useState<DailySales[]>([]);
 
   const [salesDate, setSalesDate] = useState(getTodayDate());
@@ -94,13 +97,8 @@ function DailySalesPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_BASE_URLS.milkShop}/sales`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load daily sales");
-      }
-
-      const data: DailySales[] = await response.json();
+      const response = await api.get<DailySales[]>(`${API_BASE_URLS.milkShop}/sales`);
+      const data = response.data;
 
       const sortedData = data.sort((a, b) => {
         return new Date(b.salesDate).getTime() - new Date(a.salesDate).getTime();
@@ -160,29 +158,19 @@ function DailySalesPage() {
     }
 
     try {
-      const response = await fetch(
+      const response = await api.post<DailySales>(
         `${API_BASE_URLS.milkShop}/sales/daily-summary`,
         {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            salesDate,
-            totalSalesValue: Number(totalSalesValue),
-            cashHandedOver: Number(cashHandedOver),
-            operatorId: TEMP_OPERATOR_ID,
-            receivedBy,
-            remarks,
-          }),
+          salesDate,
+          totalSalesValue: Number(totalSalesValue),
+          cashHandedOver: Number(cashHandedOver),
+          operatorId: TEMP_OPERATOR_ID,
+          receivedBy,
+          remarks,
         }
       );
 
-      if (!response.ok) {
-        throw new Error("Daily sales create failed");
-      }
-
-      const savedData: DailySales = await response.json();
+      const savedData = response.data;
 
       resetForm();
       await loadDailySales();
@@ -235,7 +223,9 @@ function DailySalesPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Record daily Milk Shop sales, cash handed over, and discrepancy.
+        {canMutateBusinessData
+          ? "Record daily Milk Shop sales, cash handed over, and discrepancy."
+          : "View daily Milk Shop sales history and cash handover records."}
       </Typography>
 
       <Box
@@ -298,6 +288,7 @@ function DailySalesPage() {
         </Card>
       </Box>
 
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -399,6 +390,7 @@ function DailySalesPage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
       <Paper sx={{ mt: 3, p: 2 }}>
         <Box

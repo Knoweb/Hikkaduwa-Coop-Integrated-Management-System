@@ -6,6 +6,7 @@ import {
 } from '@mui/material'; 
 import SearchIcon from '@mui/icons-material/Search';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface IssuanceInvoice {
     id: string;

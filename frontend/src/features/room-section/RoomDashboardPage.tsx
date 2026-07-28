@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePermissions } from '../../hooks/usePermissions';
 import {
   Alert,
   Box,
@@ -16,6 +17,7 @@ import {
   Typography,
 } from "@mui/material";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import api from "../../api/axiosConfig";
 
 type ChipColor =
   | "default"
@@ -104,39 +106,26 @@ function RoomDashboardPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const todayKey = formatDateKey(new Date());
 
   const loadDashboardData = async () => {
     try {
       setLoading(true);
 
-      const roomsResponse = await fetch(API_BASE_URLS.roomSection);
+      const roomsResponse = await api.get<Room[]>(API_BASE_URLS.roomSection);
+      const roomsData = roomsResponse.data;
 
-      if (!roomsResponse.ok) {
-        throw new Error("Failed to load rooms");
-      }
-
-      const roomsData: Room[] = await roomsResponse.json();
-
-      const bookingsResponse = await fetch(
+      const bookingsResponse = await api.get<Booking[]>(
         `${API_BASE_URLS.roomSection}/bookings`
       );
+      const bookingsData = bookingsResponse.data;
 
-      if (!bookingsResponse.ok) {
-        throw new Error("Failed to load bookings");
-      }
 
-      const bookingsData: Booking[] = await bookingsResponse.json();
 
-      const remittanceResponse = await fetch(
-        `${API_BASE_URLS.roomSection}/remittances`
-      );
-
-      if (!remittanceResponse.ok) {
-        throw new Error("Failed to load remittances");
-      }
-
-      const remittanceData: Remittance[] = await remittanceResponse.json();
+      const remittanceResponse = await api.get<Remittance[]>(`${API_BASE_URLS.roomSection}/remittances`);
+      const remittanceData = remittanceResponse.data;
 
       const sortedRooms = roomsData.sort((a, b) =>
         a.roomNumber.localeCompare(b.roomNumber, undefined, {

@@ -22,7 +22,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type ChipColor =
   | "default"
@@ -56,6 +58,7 @@ const formatMoney = (value: number | string | undefined) => {
 };
 
 function RoomPage() {
+  const { canMutateBusinessData } = usePermissions();
   const [rooms, setRooms] = useState<Room[]>([]);
 
   const [vatRate, setVatRate] = useState("18");
@@ -81,13 +84,8 @@ function RoomPage() {
   const [error, setError] = useState("");
 
   const loadRooms = async () => {
-    const response = await fetch(API_BASE_URLS.roomSection);
-
-    if (!response.ok) {
-      throw new Error("Failed to load rooms");
-    }
-
-    const data: Room[] = await response.json();
+    const response = await api.get<Room[]>(API_BASE_URLS.roomSection);
+    const data = response.data;
 
     const sortedRooms = data.sort((a, b) =>
       a.roomNumber.localeCompare(b.roomNumber, undefined, {
@@ -99,13 +97,8 @@ function RoomPage() {
   };
 
   const loadBillingSettings = async () => {
-    const response = await fetch(`${API_BASE_URLS.roomSection}/billing-settings`);
-
-    if (!response.ok) {
-      throw new Error("Failed to load billing settings");
-    }
-
-    const data: BillingSetting = await response.json();
+    const response = await api.get<BillingSetting>(`${API_BASE_URLS.roomSection}/billing-settings`);
+    const data = response.data;
 
     setVatRate(String(data.vatRate));
     setSsclRate(String(data.ssclRate));
@@ -136,20 +129,10 @@ function RoomPage() {
     try {
       setSavingBilling(true);
 
-      const response = await fetch(`${API_BASE_URLS.roomSection}/billing-settings`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          vatRate: Number(vatRate || 0),
-          ssclRate: Number(ssclRate || 0),
-        }),
+      await api.put(`${API_BASE_URLS.roomSection}/billing-settings`, {
+        vatRate: Number(vatRate || 0),
+        ssclRate: Number(ssclRate || 0),
       });
-
-      if (!response.ok) {
-        throw new Error("Billing settings update failed");
-      }
 
       await loadBillingSettings();
       setMessage("Billing settings updated successfully.");
@@ -185,23 +168,13 @@ function RoomPage() {
     }
 
     try {
-      const response = await fetch(API_BASE_URLS.roomSection, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          roomNumber,
-          roomType,
-          basePrice: Number(basePrice),
-          extraHourRate: Number(extraHourRate || 0),
-          status,
-        }),
+      await api.post(API_BASE_URLS.roomSection, {
+        roomNumber,
+        roomType,
+        basePrice: Number(basePrice),
+        extraHourRate: Number(extraHourRate || 0),
+        status,
       });
-
-      if (!response.ok) {
-        throw new Error("Room create failed");
-      }
 
       setRoomNumber("");
       setRoomType("AC");
@@ -254,23 +227,13 @@ function RoomPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URLS.roomSection}/${editingRoomId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          roomNumber: editRoomNumber,
-          roomType: editRoomType,
-          basePrice: Number(editBasePrice),
-          extraHourRate: Number(editExtraHourRate || 0),
-          status: editStatus,
-        }),
+      await api.put(`${API_BASE_URLS.roomSection}/${editingRoomId}`, {
+        roomNumber: editRoomNumber,
+        roomType: editRoomType,
+        basePrice: Number(editBasePrice),
+        extraHourRate: Number(editExtraHourRate || 0),
+        status: editStatus,
       });
-
-      if (!response.ok) {
-        throw new Error("Room update failed");
-      }
 
       closeEditDialog();
       await loadRooms();
@@ -296,10 +259,12 @@ function RoomPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Add rooms, edit room details, update billing settings, and manage room
-        status.
+        {canMutateBusinessData
+          ? "Add rooms, edit room details, update billing settings, and manage room status."
+          : "View room details and current billing settings."}
       </Typography>
 
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -365,7 +330,9 @@ function RoomPage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -480,6 +447,7 @@ function RoomPage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
       <Paper sx={{ mt: 3, p: 2, width: "100%", overflow: "hidden" }}>
         <Typography variant="h5" sx={{ fontWeight: "bold" }}gutterBottom>
@@ -502,7 +470,7 @@ function RoomPage() {
                 <TableCell sx={{ fontWeight: "bold" }}>Base Price</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Extra Hour Rate</TableCell>
                 <TableCell sx={{ fontWeight: "bold" }}>Current Status</TableCell>
-                <TableCell sx={{ fontWeight: "bold" }}>Edit</TableCell>
+                {canMutateBusinessData && <TableCell sx={{ fontWeight: "bold" }}>Edit</TableCell>}
               </TableRow>
             </TableHead>
 
@@ -527,6 +495,7 @@ function RoomPage() {
                       />
                     </TableCell>
 
+                    {canMutateBusinessData && (
                     <TableCell>
                       <Button
                         variant="contained"
@@ -544,6 +513,7 @@ function RoomPage() {
                         Edit
                       </Button>
                     </TableCell>
+                    )}
                   </TableRow>
                 ))}
 
@@ -558,6 +528,7 @@ function RoomPage() {
         )}
       </Paper>
 
+      {canMutateBusinessData && (
       <Dialog
         open={editDialogOpen}
         onClose={closeEditDialog}
@@ -624,6 +595,7 @@ function RoomPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
       <Snackbar
         open={!!message}

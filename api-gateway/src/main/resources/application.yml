@@ -21,13 +21,13 @@ spring:
             allowedHeaders: "*"
             allowCredentials: true
 
+      default-filters:
+        - AuthenticationFilter
       routes:
         - id: auth-service
           uri: lb://AUTH-SERVICE
           predicates:
             - Path=/auth/**
-          filters:
-            - AuthenticationFilter
 
         - id: beer-garden-service
           uri: lb://BEER-GARDEN-SERVICE
@@ -42,7 +42,7 @@ spring:
         - id: admin-service
           uri: lb://ADMIN-SERVICE
           predicates:
-            - Path=/api/v1/admin/**
+            - Path=/api/v1/admin/**,/api/v1/audit-observations/**,/api/v1/audit-observations
 
         - id: room-section-service
           uri: lb://ROOM-SECTION-SERVICE

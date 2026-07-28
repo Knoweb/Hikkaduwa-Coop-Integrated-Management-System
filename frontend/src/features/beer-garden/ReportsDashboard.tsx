@@ -5,6 +5,7 @@ import {
 } from '@mui/material';
 import PrintIcon from '@mui/icons-material/Print';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface Invoice {
     invoiceNumber: string;
@@ -34,6 +35,7 @@ interface GRN {
 
 const ReportsDashboard: React.FC = () => {
     const [tabIndex, setTabIndex] = useState(0);
+  const { canMutateBusinessData } = usePermissions();
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [payments, setPayments] = useState<Payment[]>([]);
     const [grns, setGrns] = useState<GRN[]>([]); 

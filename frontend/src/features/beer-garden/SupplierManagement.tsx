@@ -4,6 +4,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import type { GridColDef } from '@mui/x-data-grid';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface Supplier {
     id: string;
@@ -24,6 +25,7 @@ interface UnpaidGrn {
 
 const SupplierManagement: React.FC = () => {
     const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const { canMutateBusinessData } = usePermissions();
     
     const [openAddDialog, setOpenAddDialog] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -144,19 +146,23 @@ const SupplierManagement: React.FC = () => {
         }
     ];
 
+    const finalColumns = canMutateBusinessData ? columns : columns.filter(c => c.field !== 'action');
+
     return (
         <Box sx={{ padding: 3, display: 'flex', flexDirection: 'column', height: '100vh' }}>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
                 <Typography variant="h4" sx={{ fontWeight: 'bold', color: '#451a03' }}>Supplier Ledger</Typography>
+                {canMutateBusinessData && (
                 <Button variant="contained" color="primary" startIcon={<AddIcon />} onClick={() => setOpenAddDialog(true)}>
                     Add Supplier
                 </Button>
+                )}
             </Box>
 
             <Box sx={{ flexGrow: 1, minHeight: 400, width: '100%', mb: 2 }}>
                 <DataGrid 
                     rows={suppliers} 
-                    columns={columns} 
+                    columns={finalColumns} 
                     slots={{ toolbar: GridToolbar }} 
                     initialState={{ sorting: { sortModel: [{ field: 'outstandingBalance', sort: 'desc' }] } }}
                 />
@@ -171,6 +177,7 @@ const SupplierManagement: React.FC = () => {
                 </Typography>
             </Paper>
 
+            {canMutateBusinessData && (
             <Dialog open={openAddDialog} onClose={() => setOpenAddDialog(false)} maxWidth="sm" fullWidth>
               
                <DialogTitle sx={{ fontWeight: 'bold' }}>Register New Supplier</DialogTitle>
@@ -200,7 +207,9 @@ const SupplierManagement: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            )}
 
+            {canMutateBusinessData && (
             <Dialog open={openPaymentDialog} onClose={() => setOpenPaymentDialog(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Settle Supplier Debt</DialogTitle>
                 <DialogContent>
@@ -238,6 +247,7 @@ const SupplierManagement: React.FC = () => {
                     <Button onClick={handleProcessPayment} variant="contained" color="success">Process Payment</Button>
                 </DialogActions>
             </Dialog>
+            )}
         </Box>
     );
 };

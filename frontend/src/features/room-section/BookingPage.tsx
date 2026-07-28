@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import type { SyntheticEvent } from "react";
 import { Alert, Box, Snackbar, Typography } from "@mui/material";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 import BookingForm from "./components/BookingForm";
 import BookingList from "./components/BookingList";
@@ -86,6 +88,7 @@ const getTodayDateTime = () => {
 };
 
 function BookingPage() {
+  const { canMutateBusinessData } = usePermissions();
   const [rooms, setRooms] = useState<Room[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [availabilityRooms, setAvailabilityRooms] = useState<
@@ -121,13 +124,8 @@ function BookingPage() {
   const [error, setError] = useState("");
 
   const loadRooms = async () => {
-    const response = await fetch(API_BASE_URLS.roomSection);
-
-    if (!response.ok) {
-      throw new Error("Failed to load rooms");
-    }
-
-    const data: Room[] = await response.json();
+    const response = await api.get<Room[]>(API_BASE_URLS.roomSection);
+    const data = response.data;
 
     const sortedRooms = data.sort((a, b) =>
       a.roomNumber.localeCompare(b.roomNumber, undefined, {
@@ -139,13 +137,8 @@ function BookingPage() {
   };
 
   const loadBookings = async () => {
-    const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`);
-
-    if (!response.ok) {
-      throw new Error("Failed to load bookings");
-    }
-
-    const data: Booking[] = await response.json();
+    const response = await api.get<Booking[]>(`${API_BASE_URLS.roomSection}/bookings`);
+    const data = response.data;
 
     const sortedBookings = data.sort(
       (a, b) => new Date(b.checkIn).getTime() - new Date(a.checkIn).getTime()
@@ -155,15 +148,10 @@ function BookingPage() {
   };
 
   const loadBillingSettings = async () => {
-    const response = await fetch(
+    const response = await api.get<BillingSetting>(
       `${API_BASE_URLS.roomSection}/billing-settings`
     );
-
-    if (!response.ok) {
-      throw new Error("Failed to load billing settings");
-    }
-
-    const data: BillingSetting = await response.json();
+    const data = response.data;
     setBillingSetting(data);
   };
 
@@ -200,17 +188,12 @@ function BookingPage() {
     }
 
     try {
-      const response = await fetch(
+      const response = await api.get<AvailabilityRoom[]>(
         `${API_BASE_URLS.roomSection}/availability?startDate=${encodeURIComponent(
           formData.checkIn
         )}&endDate=${encodeURIComponent(formData.checkOut)}`
       );
-
-      if (!response.ok) {
-        throw new Error("Availability check failed");
-      }
-
-      const data: AvailabilityRoom[] = await response.json();
+      const data = response.data;
 
       const sortedData = data.sort((a, b) =>
         a.roomNumber.localeCompare(b.roomNumber, undefined, {
@@ -282,27 +265,17 @@ function BookingPage() {
     try {
       setSaving(true);
 
-      const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          roomId: formData.roomId,
-          guestName: formData.guestName,
-          nicPassport: formData.nicPassport,
-          checkIn: formData.checkIn,
-          checkOut: formData.checkOut,
-          adults: Number(formData.adults || 1),
-          children: Number(formData.children || 0),
-          serviceChargeAmount: Number(formData.serviceChargeAmount || 0),
-          advancePayment: Number(formData.advancePayment || 0),
-        }),
+      await api.post(`${API_BASE_URLS.roomSection}/bookings`, {
+        roomId: formData.roomId,
+        guestName: formData.guestName,
+        nicPassport: formData.nicPassport,
+        checkIn: formData.checkIn,
+        checkOut: formData.checkOut,
+        adults: Number(formData.adults || 1),
+        children: Number(formData.children || 0),
+        serviceChargeAmount: Number(formData.serviceChargeAmount || 0),
+        advancePayment: Number(formData.advancePayment || 0),
       });
-
-      if (!response.ok) {
-        throw new Error("Booking create failed");
-      }
 
       setFormData({
         roomId: "",
@@ -337,16 +310,9 @@ function BookingPage() {
     if (!confirmCancel) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URLS.roomSection}/bookings/${bookingId}/cancel`,
-        {
-          method: "PATCH",
-        }
+      await api.patch(
+        `${API_BASE_URLS.roomSection}/bookings/${bookingId}/cancel`
       );
-
-      if (!response.ok) {
-        throw new Error("Cancel failed");
-      }
 
       await loadData();
       resetAvailability();
@@ -374,16 +340,9 @@ function BookingPage() {
     if (!confirmPayment) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URLS.roomSection}/bookings/${booking.id}/full-payment`,
-        {
-          method: "PATCH",
-        }
+      await api.patch(
+        `${API_BASE_URLS.roomSection}/bookings/${booking.id}/full-payment`
       );
-
-      if (!response.ok) {
-        throw new Error("Full payment update failed");
-      }
 
       await loadData();
       resetAvailability();
@@ -403,16 +362,9 @@ function BookingPage() {
     if (!confirmCheckout) return;
 
     try {
-      const response = await fetch(
-        `${API_BASE_URLS.roomSection}/bookings/${bookingId}/checkout`,
-        {
-          method: "PATCH",
-        }
+      await api.patch(
+        `${API_BASE_URLS.roomSection}/bookings/${bookingId}/checkout`
       );
-
-      if (!response.ok) {
-        throw new Error("Check-out failed");
-      }
 
       await loadData();
       resetAvailability();
@@ -439,10 +391,12 @@ function BookingPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Create guest bookings, check room availability by date range, receive
-        final payments, and print invoices.
+        {canMutateBusinessData
+          ? "Create guest bookings, check room availability by date range, receive final payments, and print invoices."
+          : "View booking history, guest records, and payment status."}
       </Typography>
 
+      {canMutateBusinessData && (
       <BookingForm
         rooms={rooms}
         availabilityRooms={availabilityRooms}
@@ -455,6 +409,7 @@ function BookingPage() {
         onCheckAvailability={handleCheckAvailability}
         onSubmit={handleCreateBooking}
       />
+      )}
 
       <BookingList
         bookings={bookings}

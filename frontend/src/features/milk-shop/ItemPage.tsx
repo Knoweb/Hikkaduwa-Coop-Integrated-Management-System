@@ -22,7 +22,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type ItemProduct = {
   id: string;
@@ -52,6 +54,7 @@ const formatMoney = (value: number | string | undefined) => {
 };
 
 function ItemPage() {
+  const { canMutateBusinessData } = usePermissions();
   const [items, setItems] = useState<ItemProduct[]>([]);
 
   // States for Create Form
@@ -78,13 +81,8 @@ function ItemPage() {
     try {
       setLoading(true);
 
-      const response = await fetch(`${API_BASE_URLS.milkShop}/items`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load items");
-      }
-
-      const data: ItemProduct[] = await response.json();
+      const response = await api.get<ItemProduct[]>(`${API_BASE_URLS.milkShop}/items`);
+      const data = response.data;
 
       const sortedData = data.sort((a, b) => a.name.localeCompare(b.name));
 
@@ -114,22 +112,12 @@ function ItemPage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URLS.milkShop}/items`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name,
-          category: finalCategory, // Sending the final category
-          reorderLevel: Number(reorderLevel),
-          unitPrice: Number(unitPrice),
-        }),
+      await api.post(`${API_BASE_URLS.milkShop}/items`, {
+        name,
+        category: finalCategory,
+        reorderLevel: Number(reorderLevel),
+        unitPrice: Number(unitPrice),
       });
-
-      if (!response.ok) {
-        throw new Error("Item create failed");
-      }
 
       // Reset form
       setName("");
@@ -187,25 +175,12 @@ function ItemPage() {
     }
 
     try {
-      const response = await fetch(
-        `${API_BASE_URLS.milkShop}/items/${editingItemId}`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            name: editName,
-            category: finalEditCategory, // Sending the updated category
-            reorderLevel: Number(editReorderLevel),
-            unitPrice: Number(editUnitPrice),
-          }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Item update failed");
-      }
+      await api.put(`${API_BASE_URLS.milkShop}/items/${editingItemId}`, {
+        name: editName,
+        category: finalEditCategory,
+        reorderLevel: Number(editReorderLevel),
+        unitPrice: Number(editUnitPrice),
+      });
 
       closeEditDialog();
       await loadItems();
@@ -224,10 +199,13 @@ function ItemPage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Add, view, and update Milk Shop items. Stock quantity will be updated later through GRN and sales.
+        {canMutateBusinessData
+          ? "Add, view, and update Milk Shop items. Stock quantity will be updated later through GRN and sales."
+          : "View Milk Shop items and product catalog."}
       </Typography>
 
       {/* --- ADD NEW ITEM CARD --- */}
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -333,6 +311,7 @@ function ItemPage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
       {/* --- ITEM LIST PAPER --- */}
       <Paper sx={{ mt: 3, p: 2 }}>
@@ -352,7 +331,7 @@ function ItemPage() {
                   <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Unit Price</TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Reorder Level</TableCell>
                   <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Status</TableCell>
-                  <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Edit</TableCell>
+                  {canMutateBusinessData && <TableCell sx={{ fontWeight: "bold", color: "#374151" }}>Edit</TableCell>}
                 </TableRow>
               </TableHead>
 
@@ -378,6 +357,7 @@ function ItemPage() {
                         sx={{ fontWeight: "bold" }}
                       />
                     </TableCell>
+                    {canMutateBusinessData && (
                     <TableCell>
                       <Button
                         variant="contained"
@@ -387,6 +367,7 @@ function ItemPage() {
                         Edit
                       </Button>
                     </TableCell>
+                    )}
                   </TableRow>
                 ))}
 
@@ -404,6 +385,7 @@ function ItemPage() {
       </Paper>
 
       {/* --- EDIT DIALOG --- */}
+      {canMutateBusinessData && (
       <Dialog
         open={editDialogOpen}
         onClose={closeEditDialog}
@@ -476,8 +458,9 @@ function ItemPage() {
           </Button>
         </DialogActions>
       </Dialog>
+      )}
 
-      {/* --- SNACKBARS --- */}
+      {/* --- ALERTS --- */}
       <Snackbar
         open={!!message}
         autoHideDuration={3000}

@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../../services/authService';
+import { useAuth } from '../../contexts/AuthContext';
 import heroImage from '../../assets/hero.png';
 
 const Login: React.FC = () => {
+    const { setUser } = useAuth();
     const [section, setSection] = useState<string>('');
     const [username, setUsername] = useState<string>('');
     const [password, setPassword] = useState<string>('');
@@ -15,6 +17,9 @@ const Login: React.FC = () => {
 
     const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
+        
+        if (isLoading) return;
+        
         setErrorMsg('');
 
         if (!section) {
@@ -29,8 +34,8 @@ const Login: React.FC = () => {
             const userData = await loginUser(username, password) as any;
             const actualRole = userData.role; 
             
-            // 2. Save the REAL role
-            localStorage.setItem('user_role', actualRole);
+            // 2. Update AuthContext (single source of truth) — authService already persists to localStorage
+            setUser({ role: actualRole, username });
             
             // 3. Routing Logic: Master Key unlocks ALL doors, specific keys unlock ONE door
             switch (section) {
@@ -49,6 +54,10 @@ const Login: React.FC = () => {
                 case 'dashboard':
                     if (actualRole !== 'ROLE_ADMIN') throw new Error("Unauthorized");
                     navigate('/admin/dashboard');
+                    break;
+                case 'auditor':
+                    if (actualRole !== 'ROLE_ADMIN' && actualRole !== 'ROLE_AUDITOR') throw new Error("Unauthorized");
+                    navigate('/auditor/dashboard');
                     break;
                 default:
                     throw new Error("Invalid routing selection.");
@@ -240,6 +249,7 @@ const Login: React.FC = () => {
                                 <option value="milk-shop">Milk Shop Operations</option>
                                 <option value="beer-garden">Beer Garden Logistics</option>
                                 <option value="room-section">Room & Booking Logistics</option>
+                                <option value="auditor">Auditor Portal</option>
                             </select>
                         </div>
 

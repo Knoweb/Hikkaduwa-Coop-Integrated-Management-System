@@ -1,3 +1,5 @@
+import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -95,23 +97,21 @@ function RoomReportsPage() {
 
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const loadData = async () => {
     try {
       const [bookingResponse, remittanceResponse] = await Promise.all([
-        fetch(`${API_BASE_URLS.roomSection}/bookings`),
-        fetch(`${API_BASE_URLS.roomSection}/remittances`),
+        api.get(`${API_BASE_URLS.roomSection}/bookings`),
+        api.get(`${API_BASE_URLS.roomSection}/remittances`),
       ]);
 
-      if (!bookingResponse.ok) {
-        throw new Error("Failed to load bookings");
-      }
+      
 
-      if (!remittanceResponse.ok) {
-        throw new Error("Failed to load remittances");
-      }
+      
 
-      const bookingData: Booking[] = await bookingResponse.json();
-      const remittanceData: Remittance[] = await remittanceResponse.json();
+      const bookingData: Booking[] = bookingResponse.data;
+      const remittanceData: Remittance[] = remittanceResponse.data;
 
       setBookings(bookingData);
       setRemittances(remittanceData);

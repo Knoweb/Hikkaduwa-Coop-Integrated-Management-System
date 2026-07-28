@@ -1,3 +1,5 @@
+import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 import { useEffect, useMemo, useState } from "react";
 import {
   Alert,
@@ -67,25 +69,23 @@ function OccupancyMatrixPage() {
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const loadData = async () => {
     try {
-      const roomsResponse = await fetch(API_BASE_URLS.roomSection);
+      const roomsResponse = await api.get(API_BASE_URLS.roomSection);
 
-      if (!roomsResponse.ok) {
-        throw new Error("Failed to load rooms");
-      }
+      
 
-      const roomsData: Room[] = await roomsResponse.json();
+      const roomsData: Room[] = roomsResponse.data;
 
-      const bookingsResponse = await fetch(
+      const bookingsResponse = await api.get(
         `${API_BASE_URLS.roomSection}/bookings`
       );
 
-      if (!bookingsResponse.ok) {
-        throw new Error("Failed to load bookings");
-      }
+      
 
-      const bookingsData: Booking[] = await bookingsResponse.json();
+      const bookingsData: Booking[] = bookingsResponse.data;
 
       const sortedRooms = roomsData.sort((a, b) =>
         a.roomNumber.localeCompare(b.roomNumber, undefined, {

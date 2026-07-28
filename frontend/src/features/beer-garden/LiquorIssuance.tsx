@@ -3,6 +3,7 @@ import { Box, Typography, Button, TextField, MenuItem, Grid, Paper, IconButton, 
 import DeleteIcon from '@mui/icons-material/Delete';
 import PrintIcon from '@mui/icons-material/Print';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface BeerItem {
     id: string;
@@ -13,6 +14,7 @@ interface BeerItem {
 }
 
 const LiquorIssuance: React.FC = () => {
+    const { canMutateBusinessData } = usePermissions();
     const [catalog, setCatalog] = useState<BeerItem[]>([]);
     
     const [operatorName, setOperatorName] = useState('');
@@ -98,6 +100,7 @@ const LiquorIssuance: React.FC = () => {
     return (
         <Box sx={{ p: 3, maxWidth: 1000, mx: 'auto' }}>
             
+            {canMutateBusinessData ? (
             <Box className="no-print">
                 <Typography variant="h4" sx={{ fontWeight: 'bold', mb: 3 }}>Restaurant Issuance</Typography>
                 
@@ -176,6 +179,10 @@ const LiquorIssuance: React.FC = () => {
                     </Box>
                 </Box>
             </Box>
+            ) : (
+                <Typography color="error">You do not have permission to issue liquor.</Typography>
+            )}
+
             {invoiceGenerated && (
                 <Box className="print-only" sx={{ display: 'none' }}>
                     <Typography variant="h4" align="center" sx={{ fontWeight: 'bold' }}>HIKKADUWA CO-OP BEER GARDEN</Typography>

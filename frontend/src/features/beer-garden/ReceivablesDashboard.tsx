@@ -5,6 +5,7 @@ import {
     TextField, MenuItem, Stack, Alert, Menu
 } from '@mui/material';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 // Types
 interface IssuanceInvoice {
@@ -45,6 +46,8 @@ const ReceivablesDashboard: React.FC = () => {
 
     const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
     const [priorityInvoice, setPriorityInvoice] = useState<IssuanceInvoice | null>(null);
+
+    const { canMutateBusinessData } = usePermissions();
 
     const fetchInvoices = async () => {
         try {
@@ -188,7 +191,7 @@ const ReceivablesDashboard: React.FC = () => {
                             <TableCell align="right"><b>Grand Total</b></TableCell>
                             <TableCell align="right"><b>Balance Due</b></TableCell>
                             <TableCell align="center"><b>Status</b></TableCell>
-                            <TableCell align="center"><b>Action</b></TableCell>
+                            {canMutateBusinessData && <TableCell align="center"><b>Action</b></TableCell>}
                         </TableRow>
                     </TableHead>
                     <TableBody>
@@ -229,6 +232,7 @@ const ReceivablesDashboard: React.FC = () => {
                                             </Typography>
                                         )}
                                     </TableCell>
+                                    {canMutateBusinessData && (
                                     <TableCell align="center">
                                         <Button 
                                             variant="contained" 
@@ -240,6 +244,7 @@ const ReceivablesDashboard: React.FC = () => {
                                             Settle
                                         </Button>
                                     </TableCell>
+                                    )}
                                 </TableRow>
                             );
                         })}
@@ -271,6 +276,7 @@ const ReceivablesDashboard: React.FC = () => {
     </MenuItem>
 </Menu>
 
+            {canMutateBusinessData && (
             <Modal open={isModalOpen} onClose={closeModal}>
                 <Box sx={modalStyle}>
                     <Typography variant="h6" sx={{ fontWeight: 'bold', mb: 2 }}>
@@ -322,6 +328,7 @@ const ReceivablesDashboard: React.FC = () => {
                     </Stack>
                 </Box>
             </Modal>
+            )}
         </Box>
     );
 };

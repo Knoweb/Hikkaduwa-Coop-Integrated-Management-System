@@ -21,11 +21,26 @@ public class HeaderAuthFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
 
         String userRole = request.getHeader("X-User-Role");
+        String username = request.getHeader("X-User-Name");
 
         if (userRole != null && !userRole.isEmpty()) {
-            SimpleGrantedAuthority authority = new SimpleGrantedAuthority("ROLE_" + userRole.toUpperCase());
+
+            if ("ROLE_AUDITOR".equals(userRole) || "AUDITOR".equals(userRole)) {
+                String method = request.getMethod();
+                if (!method.equalsIgnoreCase("GET") && !method.equalsIgnoreCase("OPTIONS")) {
+                    response.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    response.getWriter().write("Auditor has read-only access.");
+                    return;
+                }
+            }
+
+            String roleName = userRole.startsWith("ROLE_") ? userRole : "ROLE_" + userRole.toUpperCase();
+            SimpleGrantedAuthority authority = new SimpleGrantedAuthority(roleName);
+            
+            String principal = (username != null && !username.isEmpty()) ? username : "unknown";
+            
             UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(null, null, Collections.singletonList(authority));
+                    new UsernamePasswordAuthenticationToken(principal, null, Collections.singletonList(authority));
 
             SecurityContextHolder.getContext().setAuthentication(authentication);
         }

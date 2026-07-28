@@ -17,7 +17,7 @@ public class UserDto {
             @NotBlank(message = "Password is required")
             String rawPassword,
 
-            @Pattern(regexp = "^(ROLE_ADMIN|ROLE_MILK_SHOP|ROLE_BEER_GARDEN|ROLE_ROOM_BOOKING)$",
+            @Pattern(regexp = "^(ROLE_ADMIN|ROLE_MILK_SHOP|ROLE_BEER_GARDEN|ROLE_ROOM_BOOKING|ROLE_AUDITOR)$",
                     message = "Invalid role assigned")
             String role
     ) {}

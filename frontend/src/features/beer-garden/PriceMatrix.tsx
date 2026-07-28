@@ -3,6 +3,7 @@ import { Box, Typography, Button, Stack, Dialog, DialogActions, DialogContent, D
 import { DataGrid, GridToolbar } from '@mui/x-data-grid';
 import type { GridColDef } from '@mui/x-data-grid';
 import api from '../../api/axiosConfig';
+import { usePermissions } from '../../hooks/usePermissions';
 
 interface BeerItem {
     id: string;
@@ -15,6 +16,7 @@ interface BeerItem {
 
 const PriceMatrix: React.FC = () => {
     const [prices, setPrices] = useState<BeerItem[]>([]);
+  const { canMutateBusinessData } = usePermissions();
     
     // Edit Price State
     const [openEdit, setOpenEdit] = useState(false);
@@ -61,15 +63,17 @@ const PriceMatrix: React.FC = () => {
             flex: 1,
             sortable: false,
             renderCell: (params) => (
-                userRole === 'ROLE_ADMIN' ? (
-                    <Button variant="outlined" color="warning" size="small" onClick={() => { 
-                        setSelectedBeerId(params.row.id);
-                        setSelectedBeer(params.row.beerName); 
-                        setNewPrice(params.row.unitPrice); 
-                        setOpenEdit(true); 
-                    }}>
-                        Revise
-                    </Button>
+                canMutateBusinessData ? (
+                    userRole === 'ROLE_ADMIN' ? (
+                        <Button variant="outlined" color="warning" size="small" onClick={() => { 
+                            setSelectedBeerId(params.row.id);
+                            setSelectedBeer(params.row.beerName); 
+                            setNewPrice(params.row.unitPrice); 
+                            setOpenEdit(true); 
+                        }}>
+                            Revise
+                        </Button>
+                    ) : <Typography variant="caption">Contact Admin to Revise</Typography>
                 ) : <Typography variant="caption">View Only</Typography>
             )
         }
@@ -136,7 +140,7 @@ const PriceMatrix: React.FC = () => {
                         onChange={(e) => setSearchText(e.target.value)}
                         sx={{ width: '250px', backgroundColor: 'white', borderRadius: 1 }}
                     />
-                    {userRole === 'ROLE_ADMIN' && (
+                    {userRole === 'ROLE_ADMIN' && canMutateBusinessData && (
                         <Button variant="contained" color="success" onClick={() => setOpenAdd(true)}>
                             + Add New Beer
                         </Button>
@@ -151,6 +155,7 @@ const PriceMatrix: React.FC = () => {
                 initialState={{ sorting: { sortModel: [{ field: 'beerName', sort: 'asc' }] } }}
             />
 
+            {canMutateBusinessData && (
             <Dialog open={openEdit} onClose={() => setOpenEdit(false)} maxWidth="sm" fullWidth>
                 <DialogTitle>Revise Selling Price</DialogTitle>
                 <DialogContent>
@@ -163,7 +168,9 @@ const PriceMatrix: React.FC = () => {
                     <Button onClick={handleUpdatePrice} variant="contained" color="warning">Update</Button>
                 </DialogActions>
             </Dialog>
+            )}
 
+            {canMutateBusinessData && (
             <Dialog open={openAdd} onClose={() => setOpenAdd(false)} maxWidth="sm" fullWidth>
                 <DialogTitle sx={{ fontWeight: 'bold' }}>Add New Beer to Catalog</DialogTitle>
                 <DialogContent dividers>
@@ -186,6 +193,7 @@ const PriceMatrix: React.FC = () => {
                     </Button>
                 </DialogActions>
             </Dialog>
+            )}
         </Box>
     );
 };

@@ -17,7 +17,9 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import api from "../../api/axiosConfig";
 import { API_BASE_URLS } from "../../api/apiConfig";
+import { usePermissions } from "../../hooks/usePermissions";
 
 type ChipColor =
   | "default"
@@ -86,15 +88,12 @@ function RemittancePage() {
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
 
+  const { canMutateBusinessData } = usePermissions();
+
   const loadRemittances = async () => {
     try {
-      const response = await fetch(`${API_BASE_URLS.roomSection}/remittances`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load remittances");
-      }
-
-      const data: Remittance[] = await response.json();
+      const response = await api.get<Remittance[]>(`${API_BASE_URLS.roomSection}/remittances`);
+      const data = response.data;
 
       const sortedData = data.sort((a, b) => {
         return (
@@ -112,13 +111,8 @@ function RemittancePage() {
 
   const loadBookings = async () => {
     try {
-      const response = await fetch(`${API_BASE_URLS.roomSection}/bookings`);
-
-      if (!response.ok) {
-        throw new Error("Failed to load bookings");
-      }
-
-      const data: Booking[] = await response.json();
+      const response = await api.get<Booking[]>(`${API_BASE_URLS.roomSection}/bookings`);
+      const data = response.data;
 
       setBookings(data);
     } catch (err) {
@@ -178,23 +172,13 @@ function RemittancePage() {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URLS.roomSection}/remittances`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          remittanceDate,
-          totalCollected: Number(totalCollected),
-          receptionistId: TEMP_RECEPTIONIST_ID,
-        }),
+      const response = await api.post<Remittance>(`${API_BASE_URLS.roomSection}/remittances`, {
+        remittanceDate,
+        totalCollected: Number(totalCollected),
+        receptionistId: TEMP_RECEPTIONIST_ID,
       });
 
-      if (!response.ok) {
-        throw new Error("Remittance create failed");
-      }
-
-      const savedData: Remittance = await response.json();
+      const savedData = response.data;
 
       setRemittanceDate("");
       setTotalCollected("");
@@ -244,10 +228,10 @@ function RemittancePage() {
       </Typography>
 
       <Typography color="text.secondary">
-        Record daily room cash collections and compare the actual collected
-        amount with the system expected cash total.
+        {canMutateBusinessData ? "Record daily room cash collections and compare the actual collected amount with the system expected cash total." : "View daily room cash collections and compare the actual collected amount with the system expected cash total."}
       </Typography>
 
+      {canMutateBusinessData && (
       <Card
         sx={{
           mt: 3,
@@ -351,6 +335,7 @@ function RemittancePage() {
           </Box>
         </CardContent>
       </Card>
+      )}
 
       <Paper
         sx={{
